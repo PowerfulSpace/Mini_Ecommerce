@@ -70,12 +70,16 @@ Do not add speculative abstractions, empty feature directories, or placeholder i
 
 The backend follows Clean Architecture.
 
-The backend projects are located under `src/Backend/`:
+The backend projects are located under `src/Backend/PS.MiniEcommerce/`:
 
-- `MiniEcommerce.Domain`
-- `MiniEcommerce.Application`
-- `MiniEcommerce.Infrastructure`
-- `MiniEcommerce.API`
+- `PS.MiniEcommerce.Domain`
+- `PS.MiniEcommerce.Application`
+- `PS.MiniEcommerce.Infrastructure`
+- `PS.MiniEcommerce.API`
+
+The solution is `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx`. It uses the `.slnx` format and stays nested under the backend directory. The `PS.` prefix is deliberate and must be preserved in project names, namespaces, and paths. Do not rename projects or drop the prefix.
+
+The test projects are `tests/PS.MiniEcommerce.UnitTests` and `tests/PS.MiniEcommerce.IntegrationTests`.
 
 The frontend is located under `src/Frontend/`.
 
@@ -88,7 +92,7 @@ Keep responsibilities separated:
 
 Dependencies must point inward toward Domain and Application. Domain must remain independent of infrastructure and presentation concerns.
 
-Do not create a `Common` project or folder unless an explicit need is established and approved.
+A separate `Common` project is not part of the MVP. `PS.MiniEcommerce.Common` is not an agreed project: it is scheduled for removal in Phase 1 and must not be referenced, extended, or recreated. Do not create a `Common` project or folder; shared types belong to the layer that owns them.
 
 Use feature-based organization in Application. Create feature folders when implementing actual functionality, not as empty scaffolding.
 
@@ -110,6 +114,7 @@ Use the approved stack:
 - FluentValidation.
 - xUnit.
 - NSubstitute.
+- Microsoft.AspNetCore.Mvc.Testing for API integration tests.
 - Vue 3.
 - TypeScript.
 - Vite.
@@ -119,7 +124,7 @@ Do not replace these technologies or introduce major alternatives without approv
 
 Use `decimal` for monetary values and preserve the specified SQL precision.
 
-Keep configuration and connection strings outside source code. Never commit secrets.
+Keep configuration and connection strings outside source code. Never commit secrets. Development uses .NET user secrets; integration tests read `appsettings.Test.json` with a dedicated test database.
 
 ## 7. Business-Critical Correctness
 
@@ -178,6 +183,7 @@ Use:
 
 - xUnit for unit and integration tests.
 - NSubstitute for appropriate test doubles.
+- Microsoft.AspNetCore.Mvc.Testing for tests that exercise the API host.
 - A real SQL Server test database for integration tests that depend on SQL Server behavior.
 
 Prioritize tests for business invariants, transaction boundaries, concurrency, authorization boundaries, and idempotency.

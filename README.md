@@ -4,9 +4,9 @@
 
 ## Project Status
 
-**Current phase:** Project documentation and specification.
+**Current phase:** Documentation approved, solution foundation (Phase 1).
 
-Разработка приложения начинается только после подготовки и согласования проектной документации.
+Проектная документация согласована. Каркас backend-проектов и тестовых проектов создан в рабочем дереве; solution `PS.MiniEcommerce.slnx` пока пуст и наполняется проектами в рамках Phase 1 roadmap (`docs/ROADMAP.md`).
 
 ## Project Goals
 
@@ -35,6 +35,7 @@
 - FluentValidation
 - xUnit
 - NSubstitute
+- Microsoft.AspNetCore.Mvc.Testing
 
 ### Frontend
 
@@ -53,7 +54,6 @@ Microsoft SQL Server. Локальная разработка выполняет
 MiniEcommerce/
 ├── AGENTS.md
 ├── README.md
-├── MiniEcommerce.sln
 ├── docs/
 │   ├── PROJECT.md
 │   ├── SPEC.md
@@ -70,17 +70,19 @@ MiniEcommerce/
 │       └── ADR-002-checkout-idempotency.md
 ├── src/
 │   ├── Backend/
-│   │   ├── MiniEcommerce.Domain/
-│   │   ├── MiniEcommerce.Application/
-│   │   ├── MiniEcommerce.Infrastructure/
-│   │   └── MiniEcommerce.API/
+│   │   └── PS.MiniEcommerce/
+│   │       ├── PS.MiniEcommerce.slnx
+│   │       ├── PS.MiniEcommerce.Domain/
+│   │       ├── PS.MiniEcommerce.Application/
+│   │       ├── PS.MiniEcommerce.Infrastructure/
+│   │       └── PS.MiniEcommerce.API/
 │   └── Frontend/
 └── tests/
-    ├── MiniEcommerce.UnitTests/
-    └── MiniEcommerce.IntegrationTests/
+    ├── PS.MiniEcommerce.UnitTests/
+    └── PS.MiniEcommerce.IntegrationTests/
 ```
 
-Это целевая структура репозитория. Файлы и проекты будут создаваться по мере прохождения этапов разработки.
+Это фактическая структура репозитория. Solution остаётся вложенным в каталог backend-проекта (`src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx`, формат `.slnx`); префикс `PS.` намеренный и сохраняется во всех именах проектов, namespace и путях. Проект `Common` в MVP не вводится. Наполнение solution и остальные настройки выполняются по этапам roadmap.
 
 ## Documentation
 
@@ -126,7 +128,7 @@ MiniEcommerce/
 
 ## Getting Started
 
-На текущем этапе проект находится в фазе подготовки документации. Инструкции по установке, конфигурации базы данных, запуску приложения и выполнению тестов будут добавлены после реализации соответствующих этапов.
+Порядок работ определяет `docs/ROADMAP.md`, начиная с Phase 1 (создание и проверка solution). Инструкции по установке, конфигурации базы данных, запуску приложения и выполнению тестов добавляются по мере прохождения соответствующих этапов.
 
 ## License
 

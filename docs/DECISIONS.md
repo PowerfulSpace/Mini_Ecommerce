@@ -11,7 +11,25 @@ This document summarizes the key decisions for the Mini E-commerce MVP. Detailed
 - Use FluentValidation for request and application-level validation.
 - Use xUnit and NSubstitute for automated tests.
 - Keep business rules in Domain and Application rather than in API controllers.
-- Do not introduce a separate Common project unless a concrete need justifies it.
+- A separate `Common` project is not introduced in the MVP. Shared types stay in the layer that owns them.
+
+### 1.1 Repository Layout and Naming
+
+- All backend and test project names use the deliberate `PS.` prefix (`PS.MiniEcommerce.*`). The prefix is preserved in project names, namespaces, and paths.
+- The backend resides in `src/Backend/PS.MiniEcommerce/`.
+- The solution file is `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx`. It uses the `.slnx` format, stays nested under the backend directory, and is not moved to the repository root.
+- The backend projects are `PS.MiniEcommerce.Domain`, `PS.MiniEcommerce.Application`, `PS.MiniEcommerce.Infrastructure`, and `PS.MiniEcommerce.API`.
+- Automated tests reside in `tests/PS.MiniEcommerce.UnitTests` and `tests/PS.MiniEcommerce.IntegrationTests`.
+- `PS.MiniEcommerce.Common` is not part of the agreed structure and is removed during Phase 1. Do not create, reference, or extend a `Common` project.
+
+### 1.2 Build and Configuration Tooling
+
+- `global.json` and `Directory.Packages.props` are mandatory and are added in Phase 1 together with `Directory.Build.props`.
+- Connection strings are never committed. Development uses .NET user secrets; integration tests read `appsettings.Test.json` with a dedicated SQL Server test database.
+- The CORS policy allows the frontend development origin `http://localhost:5173`. The decision is recorded now; the policy is implemented in Phase 3 and used by the frontend from Phase 9.
+- Continuous integration is deferred beyond the MVP.
+- `TreatWarningsAsErrors` and code-style analyzers are enabled in Phase 3, after real application code and the validation pipeline behavior exist, not earlier.
+- `Microsoft.AspNetCore.Mvc.Testing` is part of the approved testing stack and is used by the integration test project.
 
 ## 2. Catalog and pricing
 

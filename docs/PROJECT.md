@@ -140,24 +140,26 @@ Specific package versions, project settings, and operational commands will be do
 
 ## 7. Architectural Direction
 
-The backend will be organized into four projects:
+The backend will be organized into four projects under `src/Backend/PS.MiniEcommerce/`:
 
-- `MiniEcommerce.Domain`
-- `MiniEcommerce.Application`
-- `MiniEcommerce.Infrastructure`
-- `MiniEcommerce.API`
+- `PS.MiniEcommerce.Domain`
+- `PS.MiniEcommerce.Application`
+- `PS.MiniEcommerce.Infrastructure`
+- `PS.MiniEcommerce.API`
 
-These projects will reside under `src/Backend/`.
+The solution file is `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx`. It uses the `.slnx` format and stays nested under the backend directory rather than in the repository root.
+
+The `PS.` prefix is intentional and is preserved in project names, namespaces, and paths. A separate `Common` project is not part of the MVP.
 
 The frontend will reside under `src/Frontend/`.
 
-Unit and integration tests will reside under `tests/`.
+Unit and integration tests will reside under `tests/` in `PS.MiniEcommerce.UnitTests` and `PS.MiniEcommerce.IntegrationTests`.
 
 The Domain layer must not depend on infrastructure or presentation frameworks. Application use cases will depend on abstractions where appropriate, while Infrastructure will provide implementations for persistence and other technical concerns.
 
 The project will avoid generic repositories, unnecessary shared projects, speculative abstractions, and premature architectural complexity.
 
-Detailed layer responsibilities and dependency rules are defined in `architecture/architecture.md`.
+Detailed layer responsibilities and dependency rules are defined in `architecture/architecture.md`. Naming, solution location, and build tooling decisions are recorded in `DECISIONS.md`.
 
 ## 8. Core Engineering Challenges
 

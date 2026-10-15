@@ -74,26 +74,32 @@ Create a buildable .NET solution with the agreed project structure.
 
 ### Tasks
 
-- Create `MiniEcommerce.sln`.
-- Create the backend projects:
-  - `MiniEcommerce.Domain`
-  - `MiniEcommerce.Application`
-  - `MiniEcommerce.Infrastructure`
-  - `MiniEcommerce.API`
+- Create the nested solution file `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx` in the `.slnx` format. It is not created in the repository root.
+- Create the backend projects under `src/Backend/PS.MiniEcommerce/`:
+  - `PS.MiniEcommerce.Domain`
+  - `PS.MiniEcommerce.Application`
+  - `PS.MiniEcommerce.Infrastructure`
+  - `PS.MiniEcommerce.API`
 - Create the test projects:
-  - `MiniEcommerce.UnitTests`
-  - `MiniEcommerce.IntegrationTests`
-- Add project references according to Clean Architecture.
-- Configure nullable reference types and other agreed compiler settings.
-- Add only the dependencies required for the current phase.
+  - `tests/PS.MiniEcommerce.UnitTests`
+  - `tests/PS.MiniEcommerce.IntegrationTests`
+- Register all six projects in the solution.
+- Add `global.json`, `Directory.Build.props`, and `Directory.Packages.props` at the repository root. Central package versions are managed through `Directory.Packages.props`.
+- Add project references according to Clean Architecture. No `Common` project exists or is created.
+- Add `NSubstitute` to both test projects and `Microsoft.AspNetCore.Mvc.Testing` to the integration test project.
+- Add only the other dependencies required for the current phase; MediatR, FluentValidation, and EF Core packages are added in their own phases.
+- Configure nullable reference types and other agreed compiler settings. `TreatWarningsAsErrors` and code-style analyzers stay disabled until Phase 3.
+- Remove template placeholder code from the created projects.
 - Verify that the solution builds and tests execute.
 
 ### Exit criteria
 
-- All projects exist in the agreed locations.
-- Project references respect architecture boundaries.
-- The solution builds successfully.
-- Both test projects can run.
+- All projects exist in the agreed locations with the `PS.` prefix.
+- `dotnet sln list` reports all six projects: four backend projects and two test projects.
+- Project references respect architecture boundaries and no reference points to a `Common` project.
+- `dotnet build` completes successfully for the solution.
+- Both test projects run with `dotnet test`.
+- The solution stays in `.slnx` format at `src/Backend/PS.MiniEcommerce/`.
 - No business behavior has been added prematurely.
 
 ## 6. Phase 2 — Infrastructure Foundation

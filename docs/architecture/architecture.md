@@ -10,25 +10,30 @@ The architecture should remain understandable for a single-developer project. It
 
 ## 2. Solution Structure
 
+The backend resides in `src/Backend/PS.MiniEcommerce/`. The solution file is `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx` and uses the `.slnx` format.
+
 The backend consists of four projects:
 
 ```text
-src/Backend/
-├── MiniEcommerce.Domain/
-├── MiniEcommerce.Application/
-├── MiniEcommerce.Infrastructure/
-└── MiniEcommerce.API/
+src/Backend/PS.MiniEcommerce/
+├── PS.MiniEcommerce.slnx
+├── PS.MiniEcommerce.Domain/
+├── PS.MiniEcommerce.Application/
+├── PS.MiniEcommerce.Infrastructure/
+└── PS.MiniEcommerce.API/
 ```
 
 Automated tests are maintained separately:
 
 ```text
 tests/
-├── MiniEcommerce.UnitTests/
-└── MiniEcommerce.IntegrationTests/
+├── PS.MiniEcommerce.UnitTests/
+└── PS.MiniEcommerce.IntegrationTests/
 ```
 
-### 2.1 MiniEcommerce.Domain
+The `PS.` prefix is part of the agreed naming and is preserved in project names, namespaces, and paths (see `../DECISIONS.md` section 1.1).
+
+### 2.1 PS.MiniEcommerce.Domain
 
 Contains the core business model and business invariants.
 
@@ -51,7 +56,7 @@ It must not contain:
 
 Keep the domain model pragmatic. Do not introduce a domain event system, aggregate framework, or elaborate domain services without a demonstrated requirement.
 
-### 2.2 MiniEcommerce.Application
+### 2.2 PS.MiniEcommerce.Application
 
 Contains use cases and application-level orchestration.
 
@@ -81,7 +86,7 @@ Application depends on Domain but must not depend on Infrastructure or API.
 
 MediatR is used at the application boundary to dispatch commands and queries. Do not use it as a general-purpose event bus.
 
-### 2.3 MiniEcommerce.Infrastructure
+### 2.3 PS.MiniEcommerce.Infrastructure
 
 Implements persistence and infrastructure-specific behavior.
 
@@ -102,7 +107,7 @@ SQL Server-specific correctness requirements must be implemented explicitly. EF 
 
 Avoid duplicating application business workflows in Infrastructure. Infrastructure should implement persistence operations and the database mechanisms needed to preserve the agreed invariants.
 
-### 2.4 MiniEcommerce.API
+### 2.4 PS.MiniEcommerce.API
 
 The API project is the HTTP delivery layer.
 
@@ -141,15 +146,15 @@ API depends on Application and Infrastructure for composition and runtime regist
 The core dependency relationships are:
 
 ```text
-MiniEcommerce.Domain
+PS.MiniEcommerce.Domain
         ↑
-MiniEcommerce.Application
+PS.MiniEcommerce.Application
         ↑
-MiniEcommerce.Infrastructure
+PS.MiniEcommerce.Infrastructure
 
-MiniEcommerce.API
-        ├── MiniEcommerce.Application
-        └── MiniEcommerce.Infrastructure
+PS.MiniEcommerce.API
+        ├── PS.MiniEcommerce.Application
+        └── PS.MiniEcommerce.Infrastructure
 ```
 
 More precisely:
@@ -227,7 +232,7 @@ Organize application features by use case rather than placing all handlers into 
 A possible structure is:
 
 ```text
-MiniEcommerce.Application/
+src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.Application/
 ├── Products/
 │   ├── Queries/
 │   └── DTOs/
