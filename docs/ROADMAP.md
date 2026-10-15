@@ -50,13 +50,9 @@ Finalize the specifications needed to implement the backend without guessing imp
 ### Tasks
 
 - Review `PROJECT.md`, `SPEC.md`, `DOMAIN.md`, `DECISIONS.md`, and `FRONTEND.md`.
-- Complete `architecture/architecture.md`.
-- Complete `architecture/data-model.md`.
-- Complete `architecture/api.md`.
-- Review `adr/ADR-001-cart-concurrency.md`.
-- Review `adr/ADR-002-checkout-idempotency.md`.
-- Resolve blocking questions concerning cart concurrency and idempotency recovery.
-- Finalize API DTOs, status codes, stable error codes, and `ProblemDetails` extensions.
+- Verify that `architecture/architecture.md`, `architecture/data-model.md`, and `architecture/api.md` reflect the approved decisions without contradictions.
+- Verify that `adr/ADR-001-cart-concurrency.md` and `adr/ADR-002-checkout-idempotency.md` match the approved cart version, bounded wait, and on-demand recovery decisions.
+- Confirm that API DTOs, status codes, stable error codes, and `ProblemDetails` extensions are documented in `architecture/api.md`.
 - Define integration-test database setup and cleanup.
 - Confirm the repository structure and development workflow.
 
@@ -65,7 +61,7 @@ Finalize the specifications needed to implement the backend without guessing imp
 - The documents do not contain unresolved contradictions.
 - Every implementation-critical business rule has an agreed behavior.
 - The API contract is sufficiently detailed to implement both backend and frontend.
-- Cart locking, stale-update detection, checkout retries, and abandoned idempotency attempts have defined behavior.
+- Cart locking, `If-Match` validation, checkout retries, and abandoned idempotency attempts have defined behavior.
 - No production-critical decision is silently delegated to the implementation agent.
 
 Do not begin dependent implementation while blocking questions remain unresolved.
@@ -162,8 +158,8 @@ Implement read-only catalog access.
 
 ### Tasks
 
-- Implement the product list query.
-- Return active products only.
+- Implement the product list query with pagination and stable ordering.
+- Return active products only, without requiring authentication.
 - Implement product details.
 - Apply the approved not-found behavior for unavailable or missing products.
 - Define response DTOs according to the API contract.
@@ -171,7 +167,8 @@ Implement read-only catalog access.
 
 ### Exit criteria
 
-- The catalog returns active products.
+- The catalog returns active products without authentication.
+- Pagination parameters, defaults, and maximum page sizes behave as documented.
 - Product details follow the approved not-found behavior.
 - No product administration endpoints exist.
 - Monetary values are represented consistently.
@@ -185,26 +182,25 @@ Implement persistent user-specific cart operations and concurrency protection.
 
 ### Tasks
 
-- Implement retrieval of the current user's cart.
+- Implement retrieval of the current user's cart, including lazy creation on the first request.
+- Handle concurrent first cart requests through the database uniqueness constraint.
 - Implement adding a product to the cart.
 - Increase quantity when adding a product already present.
-- Implement quantity updates.
-- Implement item removal.
+- Implement quantity updates and item removal without a request body.
 - Validate positive integer quantities.
 - Validate product activity and stock according to the specification.
 - Implement explicit cart locking using the approved SQL Server mechanism.
-- Implement stale-update detection using the approved precondition and `rowversion` strategy.
+- Return the cart `ETag` and require `If-Match` on mutations, returning `428` when it is missing and `412` when it is stale.
 - Ensure cart queries and mutations respect user ownership.
 - Add unit and SQL Server integration tests.
 
 ### Exit criteria
 
-- Each user has an independent persistent cart.
+- Each user has an independent cart, created lazily and only once under concurrent first requests.
 - Cart operations obey the approved quantity and stock rules.
 - Inactive products cannot be added or updated for purchase.
 - Failed mutations do not leave partial state.
-- Concurrent cart operations follow the approved locking and conflict behavior.
-- Stale requests cannot resurrect obsolete cart contents after checkout.
+- Concurrent cart operations follow the approved locking and `If-Match` behavior.
 - Integration tests verify the actual SQL Server behavior.
 
 ## 10. Phase 6 — Checkout and Idempotency
@@ -215,20 +211,21 @@ Implement atomic checkout with correct stock handling and safe retries.
 
 ### Tasks
 
-- Require an `Idempotency-Key`.
-- Implement user-scoped idempotency records.
-- Implement the approved initial reservation transaction.
+- Require `Idempotency-Key` and `If-Match` for `POST /api/orders`.
+- Validate the idempotency key format and reject invalid keys before reserving the key.
+- Implement user-scoped idempotency records and the approved initial reservation transaction.
+- Calculate the request fingerprint from the request target and the submitted `If-Match` value.
 - Validate that the cart is non-empty.
 - Validate product activity and stock.
 - Acquire the cart lock using the approved locking strategy.
-- Deduct stock using atomic conditional updates.
-- Process product stock changes in a stable order where required.
-- Create an order and its item snapshots.
-- Calculate the order total from the saved unit prices and quantities.
-- Clear cart items while preserving the cart record.
-- Commit order creation, stock changes, cart cleanup, and the completed idempotency result consistently.
+- Deduct stock using atomic conditional updates and process product rows in a stable order.
+- Read order-item snapshots while the product rows are locked.
+- Create an order and its item snapshots and calculate the order total.
+- Clear cart items while preserving the cart record and update the cart row so its version changes.
+- Commit order creation, stock changes, cart cleanup, the cart-row version change, and the completed idempotency result consistently.
 - Persist final business-rule failures according to the approved strategy.
-- Implement recovery and retry behavior for abandoned attempts according to the finalized design.
+- Implement the bounded wait and the `503` temporary response for matching in-progress attempts.
+- Implement on-demand recovery of abandoned attempts with an expired lease and durable-state verification, without a background service.
 - Add unit and SQL Server integration tests.
 
 ### Exit criteria
@@ -237,12 +234,15 @@ Implement atomic checkout with correct stock handling and safe retries.
 - Stock is deducted atomically and cannot become negative through checkout.
 - Any checkout failure rolls back all business changes.
 - Failed checkout preserves the cart.
-- Successful checkout clears cart items but preserves the cart.
-- Repeating a request with the same key and content returns the saved result.
-- Reusing a key with different content produces the approved conflict.
+- Successful checkout clears cart items, preserves the cart, and invalidates the previously issued cart `ETag`.
+- A stale `ETag` cannot modify the cart after a successful checkout.
+- Repeating a request with the same key and the same `If-Match` value returns the saved result.
+- Reusing a key with a different request produces the approved conflict.
 - Concurrent requests with the same key do not execute checkout twice.
+- A matching in-progress attempt waits and then returns `503`, and a later retry with the same key succeeds.
+- Abandoned `InProgress` attempts are recovered on demand after the lease expires without creating a second order.
 - Uncertain outcomes are handled without blindly creating a second order.
-- Tests cover stock races, transaction rollback, and idempotency recovery.
+- Tests cover stock races, transaction rollback, bounded wait, and idempotency recovery.
 
 ## 11. Phase 7 — Order History and Cancellation
 
@@ -252,11 +252,11 @@ Implement order retrieval and safe cancellation.
 
 ### Tasks
 
-- Implement order history for the current user.
+- Implement order history for the current user with pagination and stable ordering.
 - Implement order details using saved order-item snapshots.
 - Enforce order ownership.
-- Implement cancellation for eligible orders.
-- Change order status and restore stock in one transaction.
+- Implement cancellation for eligible orders at `POST /api/orders/{id}/cancel`.
+- Change order status and restore stock in one transaction using a conditional status update.
 - Restore the exact quantities recorded in the order.
 - Handle concurrent cancellation attempts.
 - Define and test the behavior when the order is already cancelled.
@@ -282,12 +282,18 @@ Verify that the backend satisfies the functional and consistency requirements.
 
 - Review unit-test coverage for business rules.
 - Complete SQL Server integration tests for transactional behavior.
-- Verify concurrent cart updates.
-- Verify checkout versus cart-update races.
+- Verify lazy cart creation under concurrent first requests.
+- Verify concurrent cart updates with stale and missing `If-Match`.
+- Verify checkout versus cart-update races, including the stale `ETag` after checkout.
 - Verify simultaneous checkout attempts against limited stock.
-- Verify idempotency under repeated and concurrent requests.
+- Verify idempotency under repeated and concurrent requests, including key reuse with a different request.
+- Verify the bounded wait, the `503` temporary response, and a successful retry with the same key.
+- Verify on-demand recovery after an abandoned `InProgress` record and an uncertain commit outcome.
 - Verify cancellation races.
 - Verify user isolation between Alice and Bob.
+- Verify that catalog endpoints work without authentication and that cart and order endpoints reject anonymous requests.
+- Verify pagination bounds and stable ordering.
+- Verify `GET /health` against an available and an unavailable database.
 - Verify consistent API error responses.
 - Review logs and ensure internal exception details are not exposed to clients.
 - Run the complete build and test suite.
@@ -336,14 +342,16 @@ Implement the user-facing shopping workflow.
 
 ### Tasks
 
-- Implement the product catalog.
+- Implement the product catalog with pagination.
 - Implement product details.
-- Implement the cart screen.
+- Implement the cart screen, storing and sending the cart `ETag` through `If-Match`.
 - Implement quantity updates and item removal.
-- Display stock and availability errors.
-- Implement checkout with idempotency-key reuse for retries.
+- Display stock, availability, `412`, and `428` errors.
+- Implement checkout with idempotency-key reuse for retries and `If-Match` on the request.
+- Handle `503` with code `idempotency_in_progress` by retrying the same key and request.
+- Generate a new idempotency key only for a genuinely new attempt after a saved final business error.
 - Implement order confirmation.
-- Implement order history and details.
+- Implement order history with pagination and details.
 - Implement order cancellation.
 - Add loading, empty, error, and success states.
 - Ensure responsive layouts and basic accessibility.
@@ -352,8 +360,8 @@ Implement the user-facing shopping workflow.
 ### Exit criteria
 
 - A user can browse products, manage a cart, and complete checkout.
-- Checkout retries follow the idempotency contract.
-- The UI handles business conflicts and unknown checkout outcomes correctly.
+- Checkout retries follow the idempotency contract, including `503` retries and new keys after saved final business errors.
+- The UI handles business conflicts, stale `ETag` rejections, and unknown checkout outcomes correctly.
 - Order history and details show saved order snapshots.
 - Cancellation updates the displayed order state.
 - Switching between test users does not expose another user's data.

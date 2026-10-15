@@ -264,7 +264,9 @@ Examples of input validation:
 
 - Quantity must be a positive integer.
 - Required request values must be present.
-- An idempotency key must meet the agreed format and length constraints.
+- An idempotency key must match the format defined in `../DECISIONS.md`.
+- A required `If-Match` header must be present and must contain a single concrete entity-tag.
+- Pagination parameters must be within the documented bounds.
 
 Examples of business-rule checks:
 
@@ -289,6 +291,8 @@ Requirements:
 - Order history contains only the current user's orders.
 - Order details and cancellation enforce ownership.
 - Requests for another user's order follow the approved not-found behavior.
+- Catalog endpoints and `GET /health` are public and do not require authentication.
+- Every other endpoint requires authentication and rejects anonymous requests.
 - The Development-only `X-Test-User` mechanism must not be available in Production.
 
 The current-user abstraction belongs to Application. Its runtime implementation and authentication configuration are wired through API composition.
@@ -303,36 +307,41 @@ Cart mutations and checkout must follow the approved locking strategy described 
 
 The implementation must:
 
-- Acquire the required cart lock within the transaction.
-- Keep the lock for the required duration.
-- Use `rowversion` and the agreed stale-update precondition where applicable.
+- Acquire the required cart lock within the transaction and keep it until the transaction finishes.
+- Validate the client-supplied `If-Match` value against the current `rowversion` and expose the `rowversion` as the cart `ETag`.
 - Avoid assuming that ordinary EF Core queries automatically acquire `UPDLOCK`.
-- Prevent stale requests from restoring obsolete cart contents.
+- Update the cart row whenever cart contents change, including during checkout, so that a stale request cannot restore obsolete cart contents.
 
 ### 9.2 Stock consistency
 
-Checkout must use atomic conditional stock deductions and verify affected row counts.
+Checkout must use atomic conditional stock deductions and verify affected row counts, processing product rows in a stable order by product identifier.
 
-All stock deductions for a checkout must participate in the same transaction as order creation and cart cleanup.
+Order-item snapshots of product name and unit price must be read while the product rows are still locked by those updates.
 
-If any required deduction fails, the checkout must not leave a partial order or partial stock changes.
+All stock deductions for a checkout must participate in the same transaction as order creation, cart cleanup, and the cart-row version change.
 
-Cancellation must restore the exact ordered quantities and update order status atomically.
+If any required deduction fails, the checkout must not leave a partial order or partial stock changes. The insufficient-stock response is built from a separate read after the failed transaction has rolled back.
+
+Cancellation must restore the exact ordered quantities and update the order status atomically, using a conditional status update so that only one concurrent request wins and restores stock.
 
 ### 9.3 Transaction ownership
 
 Each use case must have a clearly defined transaction boundary.
 
-The transaction boundary may be implemented in an application-facing persistence abstraction or a dedicated infrastructure component, provided that:
+Checkout orchestration is owned by the Application layer: the checkout handler defines the order of business validations and outcomes. The transaction itself is opened, committed, and rolled back by a narrow, checkout-specific interface defined in Application and implemented in Infrastructure, for example `ICheckoutTransactionExecutor`. This abstraction exists because EF Core transactions, explicit SQL locking, and conditional updates cannot live in Application, while the API and Infrastructure must not own the business workflow. This is a documented, purpose-specific abstraction and not a generic Unit of Work.
+
+The arrangement must satisfy the following:
 
 - The Application layer remains independent of EF Core.
 - Infrastructure-specific locking and transaction behavior remains explicit.
 - The use case cannot accidentally commit only part of a required business operation.
 - Transaction boundaries are covered by SQL Server integration tests.
 
-Do not add a generic Unit of Work abstraction merely to wrap `SaveChangesAsync`.
+Do not add a generic Unit of Work abstraction or a generic repository merely to wrap `SaveChangesAsync`.
 
-The checkout idempotency reservation and recovery strategy must follow `adr/ADR-002-checkout-idempotency.md`.
+Transactions run at the isolation level defined in `../DECISIONS.md`. Deadlocks are not retried in-process for the MVP; the request fails and the client retries with the same idempotency key or refetches the cart.
+
+The checkout idempotency reservation, bounded wait, and on-demand recovery strategy must follow `adr/ADR-002-checkout-idempotency.md`.
 
 ## 10. Error Handling
 
@@ -354,7 +363,7 @@ Unexpected exceptions must be logged appropriately and mapped to a generic serve
 
 Do not return database exception messages or stack traces to clients.
 
-Stable error codes and the exact `ProblemDetails` schema are defined by `architecture/api.md`; if they are not yet finalized, implementation must wait for the required contract decision rather than inventing a competing format.
+Stable error codes and the `ProblemDetails` extension field are defined by `api.md`. The `type` URI convention may be finalized during implementation, but it must not invent a format that competes with the documented contract.
 
 ## 11. Dependency Injection and Configuration
 
@@ -366,6 +375,7 @@ API composition is responsible for registering the application's runtime depende
 - Configure EF Core with the selected SQL Server connection.
 - Register authentication and authorization services.
 - Register the Development-only test authentication scheme only in Development.
+- Register the health check used by `GET /health`.
 
 Connection strings and secrets must be supplied through appropriate configuration mechanisms and must not be committed to source control.
 
@@ -393,9 +403,10 @@ Use integration tests with SQL Server to verify:
 - EF Core mappings and migrations.
 - Database constraints.
 - Transactions and rollback.
-- Cart locking and stale-update handling.
+- Cart locking, `If-Match` validation, and stale-update handling.
+- Lazy cart creation under concurrent first requests.
 - Atomic stock deductions.
-- Checkout idempotency.
+- Checkout idempotency, including bounded wait and on-demand recovery.
 - Concurrent cancellation.
 - User isolation through the API.
 

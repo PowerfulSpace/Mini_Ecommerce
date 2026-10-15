@@ -77,9 +77,9 @@ The application must preserve data consistency when operations fail or execute c
 
 - Development-only test authentication.
 - Two seeded test users for isolation and concurrency scenarios.
-- Read-only product catalog.
+- Read-only product catalog available without authentication.
 - Product activation and deactivation represented in the domain and database.
-- User-specific shopping carts.
+- User-specific shopping carts, created lazily on the first cart request.
 - Cart item creation, quantity updates, and removal.
 - Stock availability validation.
 - Order creation and order item snapshots.

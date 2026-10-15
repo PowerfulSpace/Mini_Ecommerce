@@ -36,7 +36,7 @@ A user has:
 
 ### Business Rules
 
-- Each user has exactly one active cart.
+- Each user has at most one cart, created lazily when the user first requests it.
 - A user can create multiple orders over time.
 - A user can access only their own cart and orders.
 - User identity is determined by the authenticated request context.
@@ -73,15 +73,17 @@ A product's current state and its historical representation in an order serve di
 
 A Cart represents the current purchasing selection of one user.
 
-The cart persists for the lifetime of the user account and remains available after checkout.
+The cart is created when the user first requests it and persists for the lifetime of the user account. It remains available after checkout.
 
 ### Business Rules
 
-- Each user has one persistent active cart.
+- A user has at most one cart.
+- The cart is created lazily during the user's first cart request; concurrent first requests must still produce only one cart.
 - A cart belongs to exactly one user.
 - Cart ownership cannot be changed through public API requests.
 - A cart may contain zero or more cart items.
 - Successful checkout removes all cart items but preserves the cart itself.
+- A successful checkout invalidates the cart version that was issued before it, so that concurrent operations based on the old state cannot be applied.
 - Failed checkout must leave the cart unchanged.
 - Order cancellation must not modify the current cart.
 
@@ -183,7 +185,8 @@ A successful checkout must:
 5. Store order item snapshots.
 6. Calculate the order total.
 7. Remove all items from the cart.
-8. Record the completed idempotency result.
+8. Change the cart so that its previously issued version is no longer valid.
+9. Record the completed idempotency result.
 
 These changes must be consistent as one business operation.
 
@@ -207,14 +210,16 @@ A Checkout Attempt represents one logical checkout request identified by an idem
 ### Business Rules
 
 - A key identifies one attempt for one user.
-- The same key and the same request content must not create multiple orders.
+- The same key and the same request must not create multiple orders.
 - A repeated request must return the saved result when one exists.
-- Reusing the key with different request content is a conflict.
+- Reusing the key with a different request is a conflict.
 - A new attempt after a final business-rule failure requires a new key.
 - Concurrent requests using the same key must not start independent checkout executions.
+- A matching attempt that is still running may be awaited for a limited time; when no result is available in time, the request fails temporarily and the client retries the same attempt.
 - Final business errors are retained for repeat requests.
 - Unexpected internal server errors are not automatically treated as final business results.
 - An attempt left in `InProgress` must not be blindly executed again without checking durable state.
+- Recovery runs on demand during a retry, only after the attempt's lease has expired. No background recovery process is part of the MVP.
 
 The technical reservation, persistence, and recovery mechanisms are defined in `ADR-002-checkout-idempotency.md`.
 
@@ -253,11 +258,11 @@ The following invariants must always hold after a successful committed business 
 
 ### Cart
 
-5. Each user has one persistent active cart.
+5. A user has at most one cart, and concurrent first requests create only one cart.
 6. A cart contains at most one item for each product.
 7. Every cart item has a positive integer quantity.
 8. Failed cart operations do not partially modify the cart.
-9. Checkout clears cart items without deleting the cart.
+9. Checkout clears cart items without deleting the cart and invalidates the cart version issued before it.
 10. Failed checkout preserves the cart.
 
 ### Orders
@@ -278,9 +283,10 @@ The following invariants must always hold after a successful committed business 
 ### Idempotency and Transactions
 
 20. One user and one idempotency key identify at most one logical checkout attempt.
-21. Repeating a checkout request with the same key and content cannot create a duplicate order.
-22. Reusing a key with different request content is rejected.
+21. Repeating a checkout request with the same key and request cannot create a duplicate order.
+22. Reusing a key with a different request is rejected.
 23. Checkout and cancellation must not leave partial committed business changes.
+24. An operation based on a stale cart version never modifies the cart after a successful checkout.
 
 These invariants must be protected by application logic, database constraints, transactions, and concurrency controls as appropriate.
 
@@ -294,7 +300,8 @@ Examples of business-rule failures include:
 - Product unavailable for purchase.
 - Insufficient stock.
 - Empty cart checkout.
-- Stale cart update.
+- Stale cart version.
+- Missing cart version precondition.
 - Conflicting idempotency key reuse.
 - Repeated cancellation of an already-cancelled order.
 

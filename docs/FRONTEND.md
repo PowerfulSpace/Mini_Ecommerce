@@ -93,6 +93,8 @@ Requirements:
 - Disable obviously invalid interactions where appropriate, but rely on the backend as the final authority.
 - Display a useful empty state when no active products are returned.
 - Display loading and request-error states.
+- The catalog is public and must be requested without an authentication header.
+- The product list is paginated. Load pages on demand and do not request page sizes above the documented maximum.
 
 ## 7. Product Details
 
@@ -120,9 +122,11 @@ Also show the cart total when it can be calculated from the returned data.
 
 ### 8.1 Cart behavior
 
+- The first `GET /api/cart` for a user creates the cart on the server. Treat `404` with code `cart_not_found` on a mutation as a signal that the cart must be fetched first.
+- Store the `ETag` returned with every cart response and send it back through the `If-Match` header on every cart mutation and on checkout. Do not place a version field in request bodies.
 - Adding an existing product follows the backend rule that its quantity is increased.
 - Quantity must be a positive integer.
-- Removing an item must use the dedicated remove operation rather than sending quantity zero.
+- Removing an item must use the dedicated remove operation rather than sending quantity zero. The delete request has no body.
 - The frontend must not silently reduce a quantity to fit available stock.
 - If the backend rejects a quantity update, retain or reload the authoritative server state and explain the failure.
 - If the cart is empty, show a clear empty state and a link to the catalog.
@@ -131,16 +135,16 @@ Also show the cart total when it can be calculated from the returned data.
 
 ### 8.2 Concurrent cart operations
 
-The backend may reject a stale cart update with `409 Conflict`.
+The backend rejects a stale cart operation with `412 Precondition Failed` and code `cart_version_conflict`, and a missing `If-Match` with `428 Precondition Required` and code `precondition_required`.
 
 When this happens:
 
-1. Explain that the cart changed or the operation could not be applied.
-2. Reload the cart from the backend when appropriate.
+1. Explain that the cart changed or the precondition was missing.
+2. Reload the cart from the backend to obtain the current `ETag`.
 3. Show the current server state.
-4. Do not automatically repeat a stale mutation without obtaining the required current state or precondition.
+4. Do not automatically repeat a stale mutation without obtaining the required current `ETag`.
 
-The client must not assume that a locally cached cart is authoritative.
+The client must not assume that a locally cached cart or `ETag` is authoritative.
 
 ## 9. Checkout
 
@@ -150,20 +154,22 @@ Before sending the request, the frontend should:
 
 - Verify that the cart contains items.
 - Prevent accidental duplicate submissions while a request is in progress.
-- Generate an idempotency key for the checkout attempt.
+- Generate an idempotency key for the checkout attempt, using the documented key format.
 - Preserve that key when retrying the same attempt.
+- Send the current cart `ETag` through the `If-Match` header.
 
 ### 9.1 Idempotency behavior
 
-The backend requires an `Idempotency-Key` header for checkout.
+The backend requires an `Idempotency-Key` header and an `If-Match` header for checkout.
 
 The frontend must follow these rules:
 
-- A retry of the same checkout attempt must reuse the same key and request content.
+- A retry of the same checkout attempt must reuse the same key and the same `If-Match` value.
 - A genuinely new attempt must use a new key.
 - Do not generate a new key merely because a request timed out or the response was lost.
 - Do not automatically retry checkout using a new key when the outcome of the previous request is unknown.
-- If the backend reports that the outcome is temporarily unknown, explain that the user should retry the same attempt rather than initiate another one.
+- If the backend returns `503` with code `idempotency_in_progress`, wait briefly and retry the same request with the same key and the same `If-Match` value.
+- After the backend has saved a final business error for a key, a new attempt requires a new key and a fresh cart `ETag`. Reusing the old key only replays the saved error.
 - Once a successful order is confirmed, navigate to that order.
 
 The exact client-side persistence mechanism for an outstanding idempotency key will be selected during implementation. It must support safe retry behavior without creating a second order.
@@ -176,16 +182,16 @@ On business-rule failure:
 
 - Show the error returned by the backend.
 - Preserve the cart.
-- Reload authoritative cart or product information when appropriate.
-- Make it clear when the user needs to review the cart before trying again.
+- Reload authoritative cart or product information when appropriate, including the current `ETag`.
+- Make it clear when the user needs to review the cart before trying again, and generate a new idempotency key for that new attempt.
 
-Do not treat a network failure or an unexpected server error as proof that checkout failed.
+Do not treat a network failure, an unexpected server error, or a `503` `idempotency_in_progress` response as proof that checkout failed.
 
 ## 10. Orders
 
 ### 10.1 Order history
 
-The order history screen should display the current user's orders.
+The order history screen should display the current user's orders for the current page. Load further pages on demand and respect the documented maximum page size.
 
 Where returned by the API, show:
 
@@ -267,10 +273,12 @@ Avoid optimistic updates for operations where concurrency or stock correctness c
 
 The frontend should distinguish between:
 
-- Validation errors
-- Not-found responses
+- Validation errors, including an invalid idempotency key or query parameters
+- Not-found responses, including `cart_not_found`
 - Business conflicts, including insufficient stock
-- Stale cart updates
+- Stale cart versions reported as `412 Precondition Failed`
+- Missing preconditions reported as `428 Precondition Required`
+- Temporary checkout states reported as `503 Service Unavailable`
 - Authentication failures
 - Network failures
 - Unexpected server errors
@@ -306,12 +314,14 @@ Frontend testing scope and tooling will be selected when implementation begins.
 
 At minimum, verify the following behavior manually or through automated tests:
 
-- Catalog loading and empty states
-- Adding, updating, and removing cart items
+- Catalog loading, pagination, and empty states
+- Adding, updating, and removing cart items with the current `ETag`
 - Handling stock and validation errors
-- Handling stale cart conflicts
+- Handling stale cart conflicts and missing `If-Match`
 - Successful checkout
 - Retrying checkout with the same idempotency key
+- Retrying after `503` with code `idempotency_in_progress`
+- Generating a new key after a saved final business error
 - Handling an unknown checkout outcome
 - Displaying order history and order snapshots
 - Cancelling an eligible order
@@ -333,18 +343,16 @@ The frontend MVP does not include:
 - A complex design system
 - A dedicated administrative interface
 
-## 17. Open Questions
+## 17. Remaining Details
 
-The following details must be confirmed when the backend API contract is finalized:
+Endpoint paths, DTO schemas, error codes, and the cart precondition mechanism are defined in `architecture/api.md` and are not open questions.
 
-- Exact endpoint paths and DTO schemas
-- Exact error codes and `ProblemDetails` extensions
-- How cart concurrency preconditions are represented in HTTP requests
-- How the frontend safely retains an outstanding checkout idempotency key
-- Which order fields and stock information are returned by each endpoint
-- Frontend test framework and exact dependency versions
+The following details remain to be selected during frontend implementation and must not change the backend contract:
 
-These open questions must not be resolved by inventing incompatible client-side contracts.
+- How the frontend safely retains an outstanding checkout idempotency key.
+- Frontend test framework and exact dependency versions.
+
+These details must not be resolved by inventing incompatible client-side contracts.
 
 ## 18. Related Documents
 
