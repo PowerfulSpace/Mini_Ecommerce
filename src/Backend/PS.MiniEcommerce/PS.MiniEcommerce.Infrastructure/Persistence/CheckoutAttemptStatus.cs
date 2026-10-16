@@ -1,4 +1,4 @@
-namespace PS.MiniEcommerce.Domain;
+namespace PS.MiniEcommerce.Infrastructure.Persistence;
 
 public enum CheckoutAttemptStatus
 {

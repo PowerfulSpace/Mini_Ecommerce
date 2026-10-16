@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PS.MiniEcommerce.Domain;
+using PS.MiniEcommerce.Infrastructure.Persistence;
 
 namespace PS.MiniEcommerce.Infrastructure;
 
@@ -21,6 +22,8 @@ public class AppDbContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+    public DbSet<CheckoutAttempt> CheckoutAttempts => Set<CheckoutAttempt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

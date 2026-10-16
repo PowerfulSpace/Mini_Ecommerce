@@ -91,6 +91,10 @@ public class ExceptionHandler : IExceptionHandler
                 StatusCodes.Status412PreconditionFailed,
                 "https://tools.ietf.org/html/rfc9110#section-15.5.13",
                 "Precondition failed."),
+            "idempotency_in_progress" => (
+                StatusCodes.Status503ServiceUnavailable,
+                "https://tools.ietf.org/html/rfc9110#section-15.6.4",
+                "Service unavailable."),
             _ => (
                 StatusCodes.Status409Conflict,
                 "https://tools.ietf.org/html/rfc9110#section-15.5.10",

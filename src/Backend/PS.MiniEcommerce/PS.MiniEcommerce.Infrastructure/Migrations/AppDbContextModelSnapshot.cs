@@ -25,7 +25,6 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
             modelBuilder.Entity("PS.MiniEcommerce.Domain.Cart", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -53,7 +52,6 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
             modelBuilder.Entity("PS.MiniEcommerce.Domain.CartItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CartId")
@@ -87,7 +85,6 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
             modelBuilder.Entity("PS.MiniEcommerce.Domain.Order", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -120,7 +117,6 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
             modelBuilder.Entity("PS.MiniEcommerce.Domain.OrderItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("OrderId")
@@ -157,7 +153,6 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
             modelBuilder.Entity("PS.MiniEcommerce.Domain.Product", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -195,7 +190,6 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
             modelBuilder.Entity("PS.MiniEcommerce.Domain.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -212,6 +206,62 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("PS.MiniEcommerce.Infrastructure.Persistence.CheckoutAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varbinary(32)");
+
+                    b.Property<string>("ResponsePayload")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ResponseStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeaseExpiresAtUtc");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("UserId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("CheckoutAttempts", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CheckoutAttempts_Status_Valid", "[Status] IN ('InProgress', 'Completed')");
+                        });
                 });
 
             modelBuilder.Entity("PS.MiniEcommerce.Domain.Cart", b =>
@@ -258,6 +308,20 @@ namespace PS.MiniEcommerce.Infrastructure.Migrations
                     b.HasOne("PS.MiniEcommerce.Domain.Product", null)
                         .WithMany()
                         .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PS.MiniEcommerce.Infrastructure.Persistence.CheckoutAttempt", b =>
+                {
+                    b.HasOne("PS.MiniEcommerce.Domain.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("PS.MiniEcommerce.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
