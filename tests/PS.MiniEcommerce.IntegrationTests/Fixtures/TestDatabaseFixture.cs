@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PS.MiniEcommerce.Infrastructure;
+using PS.MiniEcommerce.Infrastructure.Seed;
 using Respawn;
 using Respawn.Graph;
 
@@ -45,12 +46,19 @@ public sealed class TestDatabaseFixture : IAsyncLifetime
 
     public async Task ResetAsync()
     {
-        await using var context = new AppDbContext(CreateOptions());
+        await using (var context = new AppDbContext(CreateOptions()))
+        {
+            var connection = context.Database.GetDbConnection();
+            await connection.OpenAsync();
 
-        var connection = context.Database.GetDbConnection();
-        await connection.OpenAsync();
+            await _respawner.ResetAsync(connection);
+        }
 
-        await _respawner.ResetAsync(connection);
+        await using (var context = new AppDbContext(CreateOptions()))
+        {
+            var seeder = new DataSeeder(context);
+            await seeder.SeedAsync();
+        }
     }
 
     public async Task DisposeAsync()

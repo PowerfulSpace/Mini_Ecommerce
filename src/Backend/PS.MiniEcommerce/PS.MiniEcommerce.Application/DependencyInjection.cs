@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using PS.MiniEcommerce.Application.Behaviors;
@@ -9,6 +10,8 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         var assembly = typeof(DependencyInjection).Assembly;
+
+        ValidatorOptions.Global.LanguageManager.Culture = CultureInfo.InvariantCulture;
 
         services.AddMediatR(configuration =>
         {
