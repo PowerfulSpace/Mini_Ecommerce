@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PS.MiniEcommerce.Application.Abstractions.Persistence;
+using PS.MiniEcommerce.Application.Checkout;
+using PS.MiniEcommerce.Infrastructure.Checkout;
 using PS.MiniEcommerce.Infrastructure.Persistence;
 using PS.MiniEcommerce.Infrastructure.Seed;
 
@@ -26,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<ICartRepository, CartRepository>();
 
         services.AddScoped<ICheckoutAttemptRepository, CheckoutAttemptRepository>();
+
+        services.AddScoped<ICheckoutTransactionExecutor, CheckoutTransactionExecutor>();
 
         return services;
     }
