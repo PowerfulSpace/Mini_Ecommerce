@@ -41,4 +41,19 @@ public class ProductRepository : IProductRepository
                 product => product.Id == productId && product.IsActive,
                 cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Product>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> productIds,
+        CancellationToken cancellationToken)
+    {
+        if (productIds.Count == 0)
+        {
+            return Array.Empty<Product>();
+        }
+
+        return await _dbContext.Products
+            .AsNoTracking()
+            .Where(product => productIds.Contains(product.Id))
+            .ToListAsync(cancellationToken);
+    }
 }

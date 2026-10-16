@@ -10,4 +10,8 @@ public interface IProductRepository
         CancellationToken cancellationToken);
 
     Task<Product?> GetActiveByIdAsync(Guid productId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Product>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> productIds,
+        CancellationToken cancellationToken);
 }

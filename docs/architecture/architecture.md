@@ -236,7 +236,7 @@ src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.Application/
 ├── Products/
 │   ├── Queries/
 │   └── DTOs/
-├── Cart/
+├── Carts/
 │   ├── Commands/
 │   ├── Queries/
 │   └── DTOs/
