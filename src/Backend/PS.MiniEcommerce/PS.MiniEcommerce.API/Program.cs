@@ -87,3 +87,5 @@ static async Task WriteHealthResponse(HttpContext context, HealthReport report)
 
     await context.Response.WriteAsJsonAsync(problem);
 }
+
+public partial class Program { }
