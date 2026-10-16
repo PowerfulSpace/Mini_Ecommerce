@@ -18,6 +18,11 @@ public class OrderItem
 
     public int Quantity { get; private set; }
 
+    private OrderItem()
+    {
+        ProductName = string.Empty;
+    }
+
     internal OrderItem(Guid orderId, OrderItemData data)
     {
         if (string.IsNullOrWhiteSpace(data.ProductName))

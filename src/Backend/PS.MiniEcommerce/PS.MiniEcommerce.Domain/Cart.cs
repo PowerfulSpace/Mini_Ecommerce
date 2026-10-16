@@ -14,7 +14,7 @@ public class Cart
 
     public DateTime UpdatedAtUtc { get; private set; }
 
-    public IReadOnlyCollection<CartItem> Items => _items.AsReadOnly();
+    public IReadOnlyCollection<CartItem> Items => _items;
 
     private Cart(Guid id, Guid userId, DateTime createdAtUtc)
     {

@@ -18,6 +18,10 @@ public class Order
 
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
 
+    private Order()
+    {
+    }
+
     private Order(Guid id, Guid userId, DateTime utcNow)
     {
         Id = id;

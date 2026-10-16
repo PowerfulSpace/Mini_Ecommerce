@@ -14,6 +14,10 @@ public class CartItem
 
     public DateTime UpdatedAtUtc { get; private set; }
 
+    private CartItem()
+    {
+    }
+
     internal CartItem(Guid cartId, Guid productId, int quantity, DateTime utcNow)
     {
         Id = Guid.NewGuid();

@@ -21,11 +21,15 @@ This document summarizes the key decisions for the Mini E-commerce MVP. Detailed
 - The backend projects are `PS.MiniEcommerce.Domain`, `PS.MiniEcommerce.Application`, `PS.MiniEcommerce.Infrastructure`, and `PS.MiniEcommerce.API`.
 - Automated tests reside in `tests/PS.MiniEcommerce.UnitTests` and `tests/PS.MiniEcommerce.IntegrationTests`.
 - `PS.MiniEcommerce.Common` is not part of the agreed structure and is removed during Phase 1. Do not create, reference, or extend a `Common` project.
+- `CheckoutAttempt` is an infrastructure concern, not a domain entity. It models idempotency mechanics (fingerprint, lease, persisted response) and is implemented in Infrastructure; the Domain project does not contain it.
 
 ### 1.2 Build and Configuration Tooling
 
 - `global.json` and `Directory.Packages.props` are mandatory and are added in Phase 1 together with `Directory.Build.props`.
 - Connection strings are never committed. Development uses .NET user secrets; the integration-test database connection string is supplied through the environment variable `MINIECOMMERCE_TEST_DB` or through user secrets for local development. It is not committed to the repository and is not placed in `appsettings*.json`; integration tests read it through the standard configuration provider.
+- System.Security.Cryptography.Pkcs is pinned to 9.0.21 (transitive from Microsoft.Data.SqlClient via Microsoft.EntityFrameworkCore.SqlServer) to resolve CVE-2026-84008. Revisit when Microsoft.Data.SqlClient updates its dependency.
+- Cart.Items and Order.Items navigations are configured explicitly with HasMany(x => x.Items) and UsePropertyAccessMode(PropertyAccessMode.Field) to avoid shadow FKs (OrderId1) that EF Core would otherwise create for the read-only collection properties.
+- Design-time migrations read the connection string from the MINIECOMMERCE_DB environment variable via AppDbContextFactory. Runtime reads ConnectionStrings:Default from configuration.
 - The CORS policy allows the frontend development origin `http://localhost:5173`. The decision is recorded now; the policy is implemented in Phase 3 and used by the frontend from Phase 9.
 - Continuous integration is deferred beyond the MVP.
 - `TreatWarningsAsErrors` and code-style analyzers are enabled in Phase 3, after real application code and the validation pipeline behavior exist, not earlier.
