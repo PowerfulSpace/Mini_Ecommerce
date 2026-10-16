@@ -71,7 +71,9 @@ function reload(): void {
 }
 
 onMounted(() => {
-  void store.fetchPage(1)
+  // The catalog store is application-scoped, so returning from a product page
+  // must not reset pagination: reload the page the user was already on.
+  void store.fetchPage(store.page)
 })
 </script>
 

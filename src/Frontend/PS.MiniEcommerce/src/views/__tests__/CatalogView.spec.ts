@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { getProducts } from '@/services/api/products'
+import { useCatalogStore } from '@/stores/catalog'
 import CatalogView from '@/views/CatalogView.vue'
 import type { ApiError, Product } from '@/types/api'
 
@@ -70,5 +71,15 @@ describe('CatalogView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Каталог пуст')
+  })
+
+  it('reloads the current page on mount so pagination is preserved', async () => {
+    getProductsMock.mockResolvedValue({ items: [product], page: 3, pageSize: 20, totalCount: 50 })
+    useCatalogStore().page = 3
+
+    mountView()
+    await flushPromises()
+
+    expect(getProductsMock).toHaveBeenCalledWith({ page: 3, pageSize: 20 })
   })
 })
