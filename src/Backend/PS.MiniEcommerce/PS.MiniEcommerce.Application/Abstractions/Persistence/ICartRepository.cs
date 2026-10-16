@@ -9,4 +9,9 @@ public interface ICartRepository
     Task<Cart> CreateAsync(Guid userId, DateTime utcNow, CancellationToken cancellationToken);
 
     Task<byte[]> GetRowVersionAsync(Guid cartId, CancellationToken cancellationToken);
+
+    Task<(T Result, byte[] NewRowVersion)> ExecuteWithLockAsync<T>(
+        Guid userId,
+        Func<Cart, byte[], Task<T>> action,
+        CancellationToken cancellationToken);
 }

@@ -1,7 +1,7 @@
 using MediatR;
 using PS.MiniEcommerce.Application.Abstractions.CurrentUser;
 using PS.MiniEcommerce.Application.Abstractions.Persistence;
-using PS.MiniEcommerce.Application.Carts.DTOs;
+using PS.MiniEcommerce.Application.Carts;
 
 namespace PS.MiniEcommerce.Application.Carts.Queries;
 
@@ -37,26 +37,8 @@ public class GetCartHandler : IRequestHandler<GetCartQuery, GetCartResult>
 
         var productIds = cart.Items.Select(item => item.ProductId).ToList();
         var products = await _productRepository.GetByIdsAsync(productIds, cancellationToken);
-        var productsById = products.ToDictionary(product => product.Id);
 
-        var itemDtos = cart.Items
-            .Select(item =>
-            {
-                var product = productsById[item.ProductId];
-                var isAvailable = product.IsActive;
-
-                return new CartItemDto(
-                    item.ProductId,
-                    product.Name,
-                    product.Price,
-                    item.Quantity,
-                    product.Price * item.Quantity,
-                    isAvailable);
-            })
-            .ToList();
-
-        var totalAmount = itemDtos.Sum(item => item.LineTotal);
-        var cartDto = new CartDto(itemDtos, totalAmount);
+        var cartDto = CartDtoBuilder.Build(cart, products);
 
         return new GetCartResult(cartDto, version);
     }

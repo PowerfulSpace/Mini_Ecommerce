@@ -12,6 +12,9 @@ public class CartConfiguration : IEntityTypeConfiguration<Cart>
 
         builder.HasKey(cart => cart.Id);
 
+        builder.Property(cart => cart.Id)
+            .ValueGeneratedNever();
+
         builder.Property(cart => cart.UserId)
             .IsRequired();
 

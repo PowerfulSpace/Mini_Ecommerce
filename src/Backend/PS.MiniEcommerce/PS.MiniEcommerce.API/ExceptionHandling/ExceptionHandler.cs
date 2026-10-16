@@ -59,16 +59,7 @@ public class ExceptionHandler : IExceptionHandler
                     Extensions = { ["code"] = "validation_error" }
                 }),
 
-            DomainConflictException domainConflict => (
-                StatusCodes.Status409Conflict,
-                new ProblemDetails
-                {
-                    Type = "https://tools.ietf.org/html/rfc9110#section-15.5.10",
-                    Title = "Conflict.",
-                    Status = StatusCodes.Status409Conflict,
-                    Detail = domainConflict.Message,
-                    Instance = instance
-                }),
+            DomainConflictException domainConflict => MapDomainConflict(domainConflict, instance),
 
             NotFoundException notFound => (
                 StatusCodes.Status404NotFound,
@@ -84,5 +75,38 @@ public class ExceptionHandler : IExceptionHandler
 
             _ => (-1, null)
         };
+    }
+
+    private static (int StatusCode, ProblemDetails Problem) MapDomainConflict(
+        DomainConflictException exception,
+        PathString instance)
+    {
+        var (statusCode, type, title) = exception.Code switch
+        {
+            "precondition_required" => (
+                StatusCodes.Status428PreconditionRequired,
+                "https://tools.ietf.org/html/rfc6585#section-3",
+                "Precondition required."),
+            "cart_version_conflict" => (
+                StatusCodes.Status412PreconditionFailed,
+                "https://tools.ietf.org/html/rfc9110#section-15.5.13",
+                "Precondition failed."),
+            _ => (
+                StatusCodes.Status409Conflict,
+                "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+                "Conflict.")
+        };
+
+        var problem = new ProblemDetails
+        {
+            Type = type,
+            Title = title,
+            Status = statusCode,
+            Detail = exception.Message,
+            Instance = instance,
+            Extensions = { ["code"] = exception.Code }
+        };
+
+        return (statusCode, problem);
     }
 }

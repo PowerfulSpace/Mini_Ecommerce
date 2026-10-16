@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PS.MiniEcommerce.Application.Abstractions.Persistence;
+using PS.MiniEcommerce.Application.Exceptions;
 using PS.MiniEcommerce.Domain;
 
 namespace PS.MiniEcommerce.Infrastructure.Persistence;
@@ -51,6 +52,41 @@ public class CartRepository : ICartRepository
             .Where(cart => cart.Id == cartId)
             .Select(cart => EF.Property<byte[]>(cart, "RowVersion"))
             .FirstAsync(cancellationToken);
+    }
+
+    public async Task<(T Result, byte[] NewRowVersion)> ExecuteWithLockAsync<T>(
+        Guid userId,
+        Func<Cart, byte[], Task<T>> action,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var cart = await _dbContext.Carts
+            .FromSqlInterpolated($"SELECT * FROM Carts WITH (UPDLOCK) WHERE UserId = {userId}")
+            .Include(c => c.Items)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (cart is null)
+        {
+            throw new NotFoundException(
+                $"Cart for user {userId} was not found.",
+                "cart_not_found");
+        }
+
+        var rowVersion = _dbContext.Entry(cart).Property<byte[]>("RowVersion").CurrentValue;
+
+        var result = await action(cart, rowVersion);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        var newRowVersion = await _dbContext.Carts
+            .AsNoTracking()
+            .Where(c => c.Id == cart.Id)
+            .Select(c => EF.Property<byte[]>(c, "RowVersion"))
+            .FirstAsync(cancellationToken);
+
+        return (result, newRowVersion);
     }
 
     private static bool IsUniqueConstraintViolation(DbUpdateException exception)

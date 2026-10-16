@@ -16,6 +16,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasKey(product => product.Id);
 
+        builder.Property(product => product.Id)
+            .ValueGeneratedNever();
+
         builder.Property(product => product.Name)
             .IsRequired()
             .HasMaxLength(200);
