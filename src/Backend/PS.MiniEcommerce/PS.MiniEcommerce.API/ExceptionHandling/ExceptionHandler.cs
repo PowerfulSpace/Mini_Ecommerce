@@ -79,7 +79,7 @@ public class ExceptionHandler : IExceptionHandler
                     Status = StatusCodes.Status404NotFound,
                     Detail = notFound.Message,
                     Instance = instance,
-                    Extensions = { ["code"] = "not_found" }
+                    Extensions = { ["code"] = notFound.Code }
                 }),
 
             _ => (-1, null)

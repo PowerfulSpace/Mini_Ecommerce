@@ -5,7 +5,7 @@ using PS.MiniEcommerce.IntegrationTests.Fixtures;
 namespace PS.MiniEcommerce.IntegrationTests;
 
 [Collection("Integration")]
-public class HealthEndpointTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
+public class HealthEndpointTests : IAsyncLifetime
 {
     private readonly TestDatabaseFixture _fixture;
     private readonly CustomWebApplicationFactory _factory;

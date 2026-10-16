@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PS.MiniEcommerce.Application.Abstractions.Persistence;
+using PS.MiniEcommerce.Infrastructure.Persistence;
 using PS.MiniEcommerce.Infrastructure.Seed;
 
 namespace PS.MiniEcommerce.Infrastructure;
@@ -18,6 +20,8 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString));
 
         services.AddScoped<DataSeeder>();
+
+        services.AddScoped<IProductRepository, ProductRepository>();
 
         return services;
     }
