@@ -145,6 +145,7 @@ Implement the common infrastructure required by feature endpoints.
 - Ensure the test authentication scheme is not registered in Production.
 - Implement the `ICurrentUser` abstraction.
 - Add health checks or a minimal health endpoint if required by the agreed API design.
+- Configure the CORS policy for the development frontend origin `http://localhost:5173` (see `DECISIONS.md` §1.2).
 - Add basic API and application-layer tests.
 
 ### Exit criteria
@@ -154,6 +155,7 @@ Implement the common infrastructure required by feature endpoints.
 - Authenticated user identity is derived from the request context.
 - Alice and Bob can be used for local development.
 - The test authentication mechanism is unavailable in Production.
+- The CORS policy applies to the development origin `http://localhost:5173`, verified manually.
 - No feature accepts an arbitrary client-supplied user ID to determine ownership.
 
 ## 8. Phase 4 — Product Catalog

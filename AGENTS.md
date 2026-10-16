@@ -124,7 +124,7 @@ Do not replace these technologies or introduce major alternatives without approv
 
 Use `decimal` for monetary values and preserve the specified SQL precision.
 
-Keep configuration and connection strings outside source code. Never commit secrets. Development uses .NET user secrets; integration tests read `appsettings.Test.json` with a dedicated test database.
+Keep configuration and connection strings outside source code. Never commit secrets. Development uses .NET user secrets; the integration-test database connection string is supplied through the environment variable `MINIECOMMERCE_TEST_DB` or through user secrets for local development. It is not committed to the repository and is not placed in `appsettings*.json`; integration tests read it through the standard configuration provider and use a dedicated SQL Server test database.
 
 ## 7. Business-Critical Correctness
 

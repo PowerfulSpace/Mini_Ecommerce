@@ -25,7 +25,7 @@ This document summarizes the key decisions for the Mini E-commerce MVP. Detailed
 ### 1.2 Build and Configuration Tooling
 
 - `global.json` and `Directory.Packages.props` are mandatory and are added in Phase 1 together with `Directory.Build.props`.
-- Connection strings are never committed. Development uses .NET user secrets; integration tests read `appsettings.Test.json` with a dedicated SQL Server test database.
+- Connection strings are never committed. Development uses .NET user secrets; the integration-test database connection string is supplied through the environment variable `MINIECOMMERCE_TEST_DB` or through user secrets for local development. It is not committed to the repository and is not placed in `appsettings*.json`; integration tests read it through the standard configuration provider.
 - The CORS policy allows the frontend development origin `http://localhost:5173`. The decision is recorded now; the policy is implemented in Phase 3 and used by the frontend from Phase 9.
 - Continuous integration is deferred beyond the MVP.
 - `TreatWarningsAsErrors` and code-style analyzers are enabled in Phase 3, after real application code and the validation pipeline behavior exist, not earlier.
