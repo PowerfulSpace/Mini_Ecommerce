@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PS.MiniEcommerce.API.Authentication;
 using PS.MiniEcommerce.API.ExceptionHandling;
@@ -20,6 +21,11 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
 builder.Services.AddControllers();
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = InvalidModelStateProblemDetails.Create;
+});
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("database");

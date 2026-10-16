@@ -26,7 +26,7 @@ This document summarizes the key decisions for the Mini E-commerce MVP. Detailed
 ### 1.2 Build and Configuration Tooling
 
 - `global.json` and `Directory.Packages.props` are mandatory and are added in Phase 1 together with `Directory.Build.props`.
-- Connection strings are never committed. Development uses .NET user secrets; the integration-test database connection string is supplied through the environment variable `MINIECOMMERCE_TEST_DB` or through user secrets for local development. It is not committed to the repository and is not placed in `appsettings*.json`; integration tests read it through the standard configuration provider.
+- Connection strings are never committed to the repository. The specific connection-string sources used at runtime, at design time, and in tests are described later in this section.
 - System.Security.Cryptography.Pkcs is pinned to 9.0.21 (transitive from Microsoft.Data.SqlClient via Microsoft.EntityFrameworkCore.SqlServer) to resolve CVE-2026-84008. Revisit when Microsoft.Data.SqlClient updates its dependency.
 - Cart.Items and Order.Items navigations are configured explicitly with HasMany(x => x.Items) and UsePropertyAccessMode(PropertyAccessMode.Field) to avoid shadow FKs (OrderId1) that EF Core would otherwise create for the read-only collection properties.
 - Domain entities generate their Guid identifiers in the domain (Guid.NewGuid()). The Id of every entity is configured with ValueGeneratedNever() so that EF Core treats an entity added through a tracked collection navigation as Added. Without it, EF Core marks an application-keyed child added to a tracked parent as Modified and SaveChanges fails with a DbUpdateConcurrencyException because it issues an UPDATE for a row that does not exist yet.
@@ -142,6 +142,7 @@ The idempotency strategy is defined in [ADR-002](adr/ADR-002-checkout-idempotenc
 - Missing resources and resources owned by another user return `404 Not Found`.
 - A temporary unresolved idempotency attempt returns `503 Service Unavailable`; it must not be reported as a definitive checkout failure.
 - Final business-error responses are persisted for idempotent replay; unexpected infrastructure errors are not persisted as final business outcomes.
+- Known deviations from the error contract that are consciously accepted and deferred for the MVP are listed in section 13.
 
 ## 9. API surface
 
@@ -184,3 +185,13 @@ The MVP does not include:
 
 - [ADR-001: Cart Concurrency and Locking Strategy](adr/ADR-001-cart-concurrency.md)
 - [ADR-002: Checkout Idempotency](adr/ADR-002-checkout-idempotency.md)
+
+## 13. Known issues (deferred)
+
+The following deviations from the API contract are known, consciously accepted, and deferred beyond the MVP. They are recorded so the frontend can rely on the current behavior instead of the contract text where the two differ. They are not silent defects.
+
+- **D1 — `Idempotency-Key` is consumed when `If-Match` is missing.** Contrary to `architecture/api.md` §3.4 step 2, a `POST /api/orders` request with a valid `Idempotency-Key` but no `If-Match` reserves the key and persists the `428 precondition_required` result. A later request with the same key receives `409 idempotency_key_reused`, even when it supplies the correct `If-Match`. The frontend avoids this by always sending `If-Match` on checkout. Fixing it would change the idempotency reservation core; the risk is not justified for the MVP.
+- **D2 — `insufficient_stock` does not list the affected products.** Contrary to `architecture/api.md` §4 and section 5 of this document, the response describes only the first failing product by name and does not include a list of affected product IDs and names. The frontend displays the `detail` message for the MVP. Extending the payload is a contract change deferred beyond the MVP.
+- **D4 — checkout `ProblemDetails` omit `instance`.** Checkout final-error responses contain `type`, `title`, `status`, `detail`, and `code` but omit `instance`, unlike responses produced by the API exception handler. This is cosmetic; the frontend does not rely on `instance`. Not fixed in the MVP.
+
+

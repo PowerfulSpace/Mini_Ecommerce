@@ -432,7 +432,6 @@ The following codes are part of the API contract:
 | `insufficient_stock` | 409 | One or more products have insufficient stock |
 | `idempotency_key_reused` | 409 | The same key was used with a different request |
 | `order_already_cancelled` | 409 | The order has already been cancelled |
-| `order_cannot_be_cancelled` | 409 | The order is not in a cancellable state |
 | `idempotency_in_progress` | 503 | The matching checkout attempt is still being resolved |
 | `health_unavailable` | 503 | The database is not reachable |
 
@@ -441,6 +440,8 @@ The implementation may add codes when required, but existing codes and their mea
 A `503` response is temporary. It never means that the checkout definitively failed, and it must not be stored as a final business result.
 
 For insufficient stock, the response should identify every affected product using its product ID and name, read after the failed checkout transaction has rolled back. The list must not imply that stock is reserved after the response.
+
+Known deviations from this error contract that are consciously accepted and deferred for the MVP are listed in `../DECISIONS.md` section 13.
 
 ## 5. Concurrency and consistency requirements
 

@@ -20,6 +20,15 @@ export default defineConfigWithVueTs(
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
 
+  {
+    name: 'app/layout-component-names',
+    files: ['src/components/layout/Header.vue', 'src/components/layout/Footer.vue'],
+    rules: {
+      // These layout component files keep their conventional single-word names.
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
 
   skipFormatting,
