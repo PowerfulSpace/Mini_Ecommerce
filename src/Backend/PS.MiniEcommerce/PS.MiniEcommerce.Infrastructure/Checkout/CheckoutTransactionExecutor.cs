@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PS.MiniEcommerce.Application.Carts;
 using PS.MiniEcommerce.Application.Checkout;
+using PS.MiniEcommerce.Application.Checkout.Exceptions;
 using PS.MiniEcommerce.Application.Exceptions;
 using PS.MiniEcommerce.Application.Orders.DTOs;
 using PS.MiniEcommerce.Domain;
 using PS.MiniEcommerce.Domain.Exceptions;
+using PS.MiniEcommerce.Infrastructure.Persistence;
 
 namespace PS.MiniEcommerce.Infrastructure.Checkout;
 
@@ -147,15 +149,50 @@ public class CheckoutTransactionExecutor : ICheckoutTransactionExecutor
 
         cart.Clear(utcNow);
 
-        var attempt = await _dbContext.CheckoutAttempts
-            .FirstAsync(checkoutAttempt => checkoutAttempt.Id == checkoutAttemptId, cancellationToken);
-
         var orderDto = order.ToDto();
         var responsePayload = JsonSerializer.Serialize(orderDto, JsonOptions);
-        attempt.MarkCompleted(order.Id, CreatedStatusCode, responsePayload, utcNow);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            var markedCompleted = await _dbContext.CheckoutAttempts
+                .Where(checkoutAttempt =>
+                    checkoutAttempt.Id == checkoutAttemptId
+                    && checkoutAttempt.Status == CheckoutAttemptStatus.InProgress)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(checkoutAttempt => checkoutAttempt.Status, CheckoutAttemptStatus.Completed)
+                        .SetProperty(checkoutAttempt => checkoutAttempt.OrderId, order.Id)
+                        .SetProperty(checkoutAttempt => checkoutAttempt.ResponseStatusCode, CreatedStatusCode)
+                        .SetProperty(checkoutAttempt => checkoutAttempt.ResponsePayload, responsePayload)
+                        .SetProperty(checkoutAttempt => checkoutAttempt.UpdatedAtUtc, utcNow),
+                    cancellationToken);
+
+            if (markedCompleted == 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+
+                var existing = await _dbContext.CheckoutAttempts
+                    .AsNoTracking()
+                    .FirstAsync(checkoutAttempt => checkoutAttempt.Id == checkoutAttemptId, cancellationToken);
+
+                return new CheckoutExecutionResult(
+                    Success: existing.ResponseStatusCode == CreatedStatusCode,
+                    ResponseStatusCode: existing.ResponseStatusCode!.Value,
+                    ResponsePayload: existing.ResponsePayload!,
+                    OrderId: existing.OrderId,
+                    NewCartRowVersion: null);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is not DomainException)
+        {
+            throw new CheckoutCommitUncertainException(
+                "Checkout commit outcome is uncertain. Retry with the same idempotency key.",
+                exception);
+        }
 
         var newRowVersion = await _dbContext.Carts
             .AsNoTracking()

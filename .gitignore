@@ -448,6 +448,10 @@ pnpm-debug.log*
 # Бэкенд — секреты
 **/appsettings.Production.json
 
+# Локальная конфигурация разработки и тестов — не коммитить
+**/appsettings.Development.json
+**/appsettings.Test.json
+
 # Батч 49 (О10): локальные HTTPS-сертификаты — не коммитить
 # (*.pfx уже игнорируется в разделе «Others» выше)
 *.pem

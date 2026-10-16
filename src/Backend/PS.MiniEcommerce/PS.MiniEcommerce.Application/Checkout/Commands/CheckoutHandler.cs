@@ -9,6 +9,8 @@ public class CheckoutHandler : IRequestHandler<CheckoutCommand, CheckoutExecutio
 {
     private static readonly TimeSpan LeaseDuration = TimeSpan.FromSeconds(30);
 
+    private static readonly TimeSpan BoundedWaitTimeout = TimeSpan.FromSeconds(3);
+
     private readonly ICheckoutAttemptRepository _checkoutAttemptRepository;
     private readonly ICheckoutTransactionExecutor _checkoutTransactionExecutor;
     private readonly ICurrentUser _currentUser;
@@ -37,7 +39,7 @@ public class CheckoutHandler : IRequestHandler<CheckoutCommand, CheckoutExecutio
 
         if (existing is not null)
         {
-            return HandleExistingAttempt(existing, request);
+            return await HandleExistingAttemptAsync(existing, request, userId, cancellationToken);
         }
 
         var reserved = await _checkoutAttemptRepository.ReserveAsync(
@@ -48,9 +50,20 @@ public class CheckoutHandler : IRequestHandler<CheckoutCommand, CheckoutExecutio
             LeaseDuration,
             cancellationToken);
 
-        if (reserved.State != CheckoutAttemptState.InProgress)
+        if (reserved is null)
         {
-            return HandleExistingAttempt(reserved, request);
+            var raced = await _checkoutAttemptRepository.GetByUserAndKeyAsync(
+                userId,
+                request.IdempotencyKey,
+                cancellationToken);
+
+            if (raced is null)
+            {
+                throw new InvalidOperationException(
+                    "Reservation failed but no existing attempt was found.");
+            }
+
+            return await HandleExistingAttemptAsync(raced, request, userId, cancellationToken);
         }
 
         return await _checkoutTransactionExecutor.ExecuteAsync(
@@ -61,9 +74,11 @@ public class CheckoutHandler : IRequestHandler<CheckoutCommand, CheckoutExecutio
             cancellationToken);
     }
 
-    private static CheckoutExecutionResult HandleExistingAttempt(
+    private async Task<CheckoutExecutionResult> HandleExistingAttemptAsync(
         CheckoutAttemptData attempt,
-        CheckoutCommand request)
+        CheckoutCommand request,
+        Guid userId,
+        CancellationToken cancellationToken)
     {
         if (!attempt.RequestFingerprint.SequenceEqual(request.RequestFingerprint))
         {
@@ -72,18 +87,78 @@ public class CheckoutHandler : IRequestHandler<CheckoutCommand, CheckoutExecutio
                 "idempotency_key_reused");
         }
 
-        if (attempt.State == CheckoutAttemptState.Completed)
+        if (attempt.State == CheckoutAttemptState.InProgress)
         {
-            return new CheckoutExecutionResult(
-                Success: attempt.ResponseStatusCode == 201,
-                ResponseStatusCode: attempt.ResponseStatusCode!.Value,
-                ResponsePayload: attempt.ResponsePayload!,
-                OrderId: null,
-                NewCartRowVersion: null);
+            var completed = await _checkoutAttemptRepository.WaitForCompletionAsync(
+                userId,
+                request.IdempotencyKey,
+                BoundedWaitTimeout,
+                cancellationToken);
+
+            if (completed is not null)
+            {
+                return BuildReplayResult(completed);
+            }
+
+            var utcNow = DateTime.UtcNow;
+
+            if (attempt.LeaseExpiresAtUtc > utcNow)
+            {
+                throw new DomainConflictException(
+                    "A checkout attempt with this idempotency key is already in progress.",
+                    "idempotency_in_progress");
+            }
+
+            var claimed = await _checkoutAttemptRepository.TryClaimExpiredAsync(
+                attempt.Id,
+                utcNow,
+                LeaseDuration,
+                cancellationToken);
+
+            if (!claimed)
+            {
+                throw new DomainConflictException(
+                    "A checkout attempt with this idempotency key is already in progress.",
+                    "idempotency_in_progress");
+            }
+
+            var durableState = await _checkoutAttemptRepository.GetByUserAndKeyAsync(
+                userId,
+                request.IdempotencyKey,
+                cancellationToken);
+
+            if (durableState is null)
+            {
+                throw new InvalidOperationException(
+                    "Checkout attempt disappeared after successful claim.");
+            }
+
+            if (durableState.State == CheckoutAttemptState.Completed)
+            {
+                return BuildReplayResult(durableState);
+            }
+
+            if (durableState.OrderId is not null)
+            {
+                throw new InvalidOperationException(
+                    "Inconsistent checkout attempt state: InProgress with OrderId.");
+            }
+
+            return await _checkoutTransactionExecutor.ExecuteAsync(
+                userId,
+                durableState.Id,
+                request.IfMatch,
+                utcNow,
+                cancellationToken);
         }
 
-        throw new DomainConflictException(
-            "A checkout attempt with this idempotency key is already in progress.",
-            "idempotency_in_progress");
+        return BuildReplayResult(attempt);
     }
+
+    private static CheckoutExecutionResult BuildReplayResult(CheckoutAttemptData attempt) => new(
+        Success: attempt.ResponseStatusCode == 201,
+        ResponseStatusCode: attempt.ResponseStatusCode!.Value,
+        ResponsePayload: attempt.ResponsePayload!,
+        OrderId: null,
+        NewCartRowVersion: null);
 }

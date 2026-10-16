@@ -17,4 +17,10 @@ public static class OrderDtoMapping
                 item.Quantity,
                 item.UnitPrice * item.Quantity))
             .ToList());
+
+    public static OrderSummaryDto ToSummaryDto(this Order order) => new(
+        order.Id,
+        order.Status.ToString(),
+        order.CreatedAtUtc,
+        order.TotalAmount);
 }

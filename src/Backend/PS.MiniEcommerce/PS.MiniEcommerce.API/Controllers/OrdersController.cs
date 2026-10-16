@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PS.MiniEcommerce.Application.Checkout;
 using PS.MiniEcommerce.Application.Checkout.Commands;
+using PS.MiniEcommerce.Application.Common.Pagination;
+using PS.MiniEcommerce.Application.Orders.Commands;
+using PS.MiniEcommerce.Application.Orders.Queries;
 
 namespace PS.MiniEcommerce.API.Controllers;
 
@@ -48,6 +51,48 @@ public class OrdersController : ControllerBase
             ContentType = "application/json",
             StatusCode = result.ResponseStatusCode
         };
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetOrders(
+        [FromQuery] int page = PaginationDefaults.DefaultPage,
+        [FromQuery] int pageSize = PaginationDefaults.DefaultPageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new GetOrdersQuery(page, pageSize),
+            cancellationToken);
+
+        return Ok(new
+        {
+            items = result.Items,
+            page = result.Page,
+            pageSize = result.PageSize,
+            totalCount = result.TotalCount
+        });
+    }
+
+    [HttpGet("{orderId:guid}")]
+    public async Task<IActionResult> GetOrderById(
+        Guid orderId,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _mediator.Send(
+            new GetOrderByIdQuery(orderId),
+            cancellationToken);
+
+        return Ok(order);
+    }
+
+    [HttpPost("{orderId:guid}/cancel")]
+    public async Task<IActionResult> Cancel(
+        Guid orderId,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _mediator.Send(
+            new CancelOrderCommand(orderId), cancellationToken);
+
+        return Ok(order);
     }
 
     private static byte[] ComputeFingerprint(string? ifMatch)

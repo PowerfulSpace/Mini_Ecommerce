@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using PS.MiniEcommerce.Application.Checkout.Exceptions;
 using PS.MiniEcommerce.Application.Exceptions;
 using PS.MiniEcommerce.Domain.Exceptions;
 
@@ -71,6 +72,18 @@ public class ExceptionHandler : IExceptionHandler
                     Detail = notFound.Message,
                     Instance = instance,
                     Extensions = { ["code"] = notFound.Code }
+                }),
+
+            CheckoutCommitUncertainException commitUncertain => (
+                StatusCodes.Status503ServiceUnavailable,
+                new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.6.4",
+                    Title = "Service unavailable.",
+                    Status = StatusCodes.Status503ServiceUnavailable,
+                    Detail = commitUncertain.Message,
+                    Instance = instance,
+                    Extensions = { ["code"] = "idempotency_in_progress" }
                 }),
 
             _ => (-1, null)

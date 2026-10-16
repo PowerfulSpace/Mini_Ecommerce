@@ -4,9 +4,9 @@
 
 ## Project Status
 
-**Current phase:** Documentation approved, solution foundation (Phase 1).
+**Текущий этап:** Backend завершён и покрыт тестами (Phase 8). Далее — frontend (Phase 9–11).
 
-Проектная документация согласована. Каркас backend-проектов и тестовых проектов создан в рабочем дереве; solution `PS.MiniEcommerce.slnx` пока пуст и наполняется проектами в рамках Phase 1 roadmap (`docs/ROADMAP.md`).
+Backend реализован по Clean Architecture (`PS.MiniEcommerce.Domain`, `.Application`, `.Infrastructure`, `.API`): каталог, корзина, оформление заказа с идемпотентностью и восстановлением, история заказов и отмена. Модульные и интеграционные тесты покрывают бизнес-инварианты, транзакции, конкурентный доступ и идемпотентность. Последовательность дальнейших работ — в `docs/ROADMAP.md`.
 
 ## Project Goals
 
