@@ -2,6 +2,17 @@ import axios, { type AxiosError } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import type { ApiError } from '@/types/api'
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    /**
+     * When true, the Development-only `X-Test-User` header is not attached.
+     * Public endpoints (the catalog) must be requested without an identity
+     * header (FRONTEND.md section 6).
+     */
+    omitTestUserHeader?: boolean
+  }
+}
+
 // In development the base URL is relative and resolved through the Vite proxy.
 // In production it falls back to VITE_API_URL, so the backend origin is never
 // hard-coded in application code.
@@ -18,10 +29,14 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  // The X-Test-User header is sent on every request when a dev identity is
-  // selected. The backend ignores it on public endpoints (health, products),
-  // so sending it unconditionally keeps the client simple and avoids
-  // path-dependent logic. It is only ever a Development-only identity.
+  // Public requests opt out via `omitTestUserHeader` so the catalog is requested
+  // without an identity header (FRONTEND.md section 6). Authenticated requests
+  // receive the Development-only `X-Test-User` header when an identity is
+  // selected. This is never a production authentication mechanism.
+  if (config.omitTestUserHeader) {
+    return config
+  }
+
   const auth = useAuthStore()
   if (auth.testUser !== null) {
     config.headers.set('X-Test-User', auth.testUser)

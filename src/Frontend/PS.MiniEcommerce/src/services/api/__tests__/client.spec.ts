@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest'
-import { toApiError } from '@/services/api/client'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios'
+import { apiClient, toApiError } from '@/services/api/client'
+import { useAuthStore } from '@/stores/auth'
 
 function axiosErrorWith(status: number, data: unknown) {
   return {
@@ -55,5 +58,37 @@ describe('toApiError', () => {
     expect(error.code).toBeUndefined()
     expect(error.title).toBeUndefined()
     expect(error.raw).toBe(raw)
+  })
+})
+
+describe('apiClient X-Test-User header', () => {
+  const originalAdapter = apiClient.defaults.adapter
+
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    apiClient.defaults.adapter = originalAdapter
+  })
+
+  it('omits the identity header on public requests and attaches it elsewhere', async () => {
+    useAuthStore().setUser('alice')
+
+    const seen: Record<string, string | undefined> = {}
+    const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
+      const key = config.omitTestUserHeader ? 'public' : 'private'
+      seen[key] = config.headers.get('X-Test-User') as string | undefined
+
+      return { data: {}, status: 200, statusText: 'OK', headers: {}, config }
+    }
+    apiClient.defaults.adapter = adapter
+
+    await apiClient.get('/products', { omitTestUserHeader: true })
+    await apiClient.get('/cart')
+
+    expect(seen.public).toBeUndefined()
+    expect(seen.private).toBe('alice')
   })
 })
