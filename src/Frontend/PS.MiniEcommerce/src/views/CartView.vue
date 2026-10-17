@@ -11,6 +11,14 @@
       <n-button type="primary" @click="refresh">Обновить</n-button>
     </div>
 
+    <n-alert v-if="checkout.error" type="error" class="cart__conflict">
+      {{ checkoutErrorMessage }}
+    </n-alert>
+
+    <n-alert v-if="checkout.inProgress" type="info" class="cart__conflict">
+      Заказ обрабатывается. Нажмите «Оформить» ещё раз через несколько секунд
+    </n-alert>
+
     <n-spin :show="store.loading">
       <n-empty
         v-if="store.isEmpty && !store.error"
@@ -48,23 +56,34 @@
             </div>
           </div>
         </n-card>
-
-        <div class="cart__footer">
-          <span class="cart__total">Итого: {{ formatPrice(store.totalAmount) }}</span>
-          <n-button type="primary" disabled>Checkout — Phase 10.4</n-button>
-        </div>
       </template>
     </n-spin>
+
+    <div v-if="!store.error" class="cart__footer">
+      <span class="cart__total">Итого: {{ formatPrice(store.totalAmount) }}</span>
+      <n-button
+        type="primary"
+        :loading="checkout.submitting"
+        :disabled="store.isEmpty || store.mutating || checkout.submitting"
+        @click="onCheckout"
+      >
+        Оформить заказ
+      </n-button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { NAlert, NButton, NCard, NEmpty, NInputNumber, NSpin, NTag } from 'naive-ui'
 import { useCartStore } from '@/stores/cart'
+import { useCheckoutStore } from '@/stores/checkout'
 import type { CartItem } from '@/types/api'
 
 const store = useCartStore()
+const checkout = useCheckoutStore()
+const router = useRouter()
 
 const usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
@@ -74,6 +93,11 @@ function formatPrice(value: number): string {
 
 const errorMessage = computed(
   () => store.error?.detail || store.error?.title || 'Не удалось загрузить корзину',
+)
+
+const checkoutErrorMessage = computed(
+  () =>
+    checkout.error?.detail || checkout.error?.title || 'Не удалось оформить заказ',
 )
 
 // Local drafts let the quantity commit on blur instead of firing a mutation on
@@ -108,6 +132,20 @@ async function onRemove(item: CartItem): Promise<void> {
 
 function refresh(): void {
   void store.fetch()
+}
+
+async function onCheckout(): Promise<void> {
+  try {
+    await checkout.submit()
+  } catch {
+    // The store guards the impossible "no cart ETag" case; nothing to surface.
+    return
+  }
+
+  // Navigation happens only after a confirmed 201 response.
+  if (checkout.lastOrderId !== null) {
+    await router.push({ name: 'checkout-success', params: { id: checkout.lastOrderId } })
+  }
 }
 
 onMounted(() => {
