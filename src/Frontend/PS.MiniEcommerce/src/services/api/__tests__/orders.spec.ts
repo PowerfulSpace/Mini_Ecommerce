@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { createPinia, setActivePinia } from 'pinia'
 import { apiClient } from '@/services/api/client'
-import { createOrder } from '@/services/api/orders'
-import type { OrderDetail } from '@/types/api'
+import { createOrder, getOrder, getOrders } from '@/services/api/orders'
+import type { OrderDetail, OrderSummary, Paginated } from '@/types/api'
 
 const originalAdapter = apiClient.defaults.adapter
 
@@ -81,6 +81,67 @@ describe('orders API', () => {
     await expect(createOrder('key_12345678', '"V1"')).rejects.toMatchObject({
       status: 503,
       code: 'idempotency_in_progress',
+    })
+  })
+
+  it('getOrders returns the paginated envelope with the requested query', async () => {
+    const summary: OrderSummary = {
+      id: 'order-1',
+      status: 'Created',
+      createdAtUtc: '2026-01-15T12:30:00Z',
+      totalAmount: 19,
+    }
+    const envelope: Paginated<OrderSummary> = {
+      items: [summary],
+      page: 2,
+      pageSize: 20,
+      totalCount: 41,
+    }
+    let seen: { url?: string; method?: string; params?: unknown } = {}
+
+    apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+      seen = { url: config.url, method: config.method, params: config.params }
+      return { data: envelope, status: 200, statusText: 'OK', headers: {}, config }
+    }
+
+    const result = await getOrders({ page: 2, pageSize: 20 })
+
+    expect(seen.url).toBe('/orders')
+    expect(seen.method).toBe('get')
+    expect(seen.params).toEqual({ page: 2, pageSize: 20 })
+    expect(result).toEqual(envelope)
+  })
+
+  it('getOrder returns the order detail', async () => {
+    let seen: { url?: string; method?: string } = {}
+
+    apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+      seen = { url: config.url, method: config.method }
+      return { data: order, status: 200, statusText: 'OK', headers: {}, config }
+    }
+
+    const result = await getOrder('order-1')
+
+    expect(seen.url).toBe('/orders/order-1')
+    expect(seen.method).toBe('get')
+    expect(result).toEqual(order)
+  })
+
+  it('getOrder normalizes order_not_found into an ApiError', async () => {
+    apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+      throw {
+        isAxiosError: true,
+        response: {
+          status: 404,
+          data: { code: 'order_not_found', title: 'Order not found' },
+        },
+        config,
+      }
+    }
+
+    await expect(getOrder('missing')).rejects.toMatchObject({
+      status: 404,
+      code: 'order_not_found',
     })
   })
 })

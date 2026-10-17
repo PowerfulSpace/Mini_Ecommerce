@@ -1,5 +1,10 @@
 import { apiClient } from '@/services/api/client'
-import type { OrderDetail } from '@/types/api'
+import type { OrderDetail, OrderSummary, Paginated } from '@/types/api'
+
+export interface OrderQuery {
+  page?: number
+  pageSize?: number
+}
 
 // Checkout requires both headers: `Idempotency-Key` identifies the attempt and
 // `If-Match` carries the cart ETag, which is part of the request fingerprint
@@ -19,6 +24,23 @@ export async function createOrder(
       'If-Match': ifMatch,
     },
   })
+
+  return response.data
+}
+
+// Both read endpoints require authentication, so the shared request interceptor
+// attaches the development identity header. Failures are normalized to ApiError
+// by the response interceptor; no response shaping happens here.
+export async function getOrders(
+  params: OrderQuery = {},
+): Promise<Paginated<OrderSummary>> {
+  const response = await apiClient.get<Paginated<OrderSummary>>('/orders', { params })
+
+  return response.data
+}
+
+export async function getOrder(id: string): Promise<OrderDetail> {
+  const response = await apiClient.get<OrderDetail>(`/orders/${id}`)
 
   return response.data
 }

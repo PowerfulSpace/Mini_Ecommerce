@@ -1,35 +1,31 @@
 <template>
   <div class="order-confirmation">
-    <n-result
-      status="success"
-      title="Заказ успешно создан"
-      :description="`Номер заказа: ${orderId}`"
-    >
-      <template #footer>
-        <router-link to="/">Вернуться в каталог</router-link>
-      </template>
-    </n-result>
+    <n-spin :show="true" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { NResult } from 'naive-ui'
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { NSpin } from 'naive-ui'
 
+// Checkout confirmation is a redirect stub (Phase 10.5 decision A): the order
+// details screen is the single source of truth, so the dedicated confirmation
+// route immediately forwards to /orders/:id instead of duplicating its UI.
 const route = useRoute()
+const router = useRouter()
 
-// Phase 10.5 will load the order from the API. For now only the identifier from
-// the checkout response is shown.
-const orderId = computed(() => {
+onMounted(() => {
   const raw = route.params.id
-  return Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
+  const id = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
+  void router.replace({ name: 'order-detail', params: { id } })
 })
 </script>
 
 <style scoped>
 .order-confirmation {
-  max-width: 640px;
-  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
 }
 </style>
