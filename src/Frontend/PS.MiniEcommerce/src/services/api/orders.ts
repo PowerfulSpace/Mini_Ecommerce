@@ -44,3 +44,14 @@ export async function getOrder(id: string): Promise<OrderDetail> {
 
   return response.data
 }
+
+// Cancellation is guarded by a conditional order-status transition on the
+// backend, so it sends neither `If-Match` nor `Idempotency-Key` (api.md section
+// 3.4). The request body is empty (`undefined`, not `null`, so axios does not
+// serialize it to the four-byte string "null"); failures are normalized to
+// ApiError by the shared response interceptor.
+export async function cancelOrder(id: string): Promise<OrderDetail> {
+  const response = await apiClient.post<OrderDetail>(`/orders/${id}/cancel`, undefined)
+
+  return response.data
+}

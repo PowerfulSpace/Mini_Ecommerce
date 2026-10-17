@@ -4,9 +4,9 @@
 
 ## Project Status
 
-**Текущий этап:** Backend завершён и покрыт тестами (Phase 8). Далее — frontend (Phase 9–11).
+**Текущий этап:** Backend (Phase 1–8), frontend (Phase 9–10) и сквозная верификация MVP (Phase 11) завершены.
 
-Backend реализован по Clean Architecture (`PS.MiniEcommerce.Domain`, `.Application`, `.Infrastructure`, `.API`): каталог, корзина, оформление заказа с идемпотентностью и восстановлением, история заказов и отмена. Модульные и интеграционные тесты покрывают бизнес-инварианты, транзакции, конкурентный доступ и идемпотентность. Последовательность дальнейших работ — в `docs/ROADMAP.md`.
+Backend реализован по Clean Architecture (`PS.MiniEcommerce.Domain`, `.Application`, `.Infrastructure`, `.API`): каталог, корзина, оформление заказа с идемпотентностью и восстановлением, история заказов и отмена. Frontend на Vue 3 + TypeScript реализует каталог, карточку товара, корзину с `ETag`/`If-Match`, checkout с переиспользованием ключа идемпотентности, историю, детали и отмену заказа. Модульные, компонентные и интеграционные тесты покрывают бизнес-инварианты, транзакции, конкурентный доступ и идемпотентность. Последовательность этапов — в `docs/ROADMAP.md`.
 
 ## Project Goals
 
@@ -128,7 +128,72 @@ MiniEcommerce/
 
 ## Getting Started
 
-Порядок работ определяет `docs/ROADMAP.md`, начиная с Phase 1 (создание и проверка solution). Инструкции по установке, конфигурации базы данных, запуску приложения и выполнению тестов добавляются по мере прохождения соответствующих этапов.
+Порядок работ определяет `docs/ROADMAP.md`. Ниже — как собрать, запустить и протестировать проект локально.
+
+### Prerequisites
+
+- **.NET 10 SDK**.
+- **Node.js** `^22.18.0 || >=24.12.0` и **npm**.
+- **SQL Server** (локальный экземпляр; используется Windows-аутентификация).
+- **EF Core CLI** (для применения миграций): `dotnet tool install --global dotnet-ef`.
+
+### Backend Setup
+
+1. Скопировать `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.API/appsettings.Development.example.json` в `appsettings.Development.json` в том же каталоге и указать строку подключения в `ConnectionStrings:Default`. Файл `appsettings.Development.json` не коммитится.
+2. Создать/обновить схему БД по миграциям, передав строку подключения через переменную окружения `MINIECOMMERCE_DB`:
+
+   ```powershell
+   $env:MINIECOMMERCE_DB = "Server=localhost;Database=MiniEcommerce;Trusted_Connection=True;TrustServerCertificate=True;"
+   dotnet ef database update --project src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.Infrastructure --startup-project src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.API
+   ```
+
+3. Seed-данные (пользователи Alice и Bob, начальный каталог) применяются автоматически при старте API в окружении Development и идемпотентны.
+
+### Backend Run
+
+```powershell
+dotnet run --project src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.API --urls http://localhost:5269
+```
+
+- API: `http://localhost:5269` (`GET /health` — публичная проверка доступности БД).
+- Swagger UI доступен только в Development.
+
+### Frontend Setup / Run / Build
+
+```powershell
+cd src/Frontend/PS.MiniEcommerce
+npm install
+npm run dev        # http://localhost:5173 (Vite dev server + proxy /api -> http://localhost:5269)
+npm run build      # type-check + production build
+npm run preview    # предпросмотр production-сборки
+```
+
+Порт dev-сервера фиксирован (`strictPort`), так как backend CORS-политика привязана к `http://localhost:5173`. В production базовый URL API берётся из `VITE_API_URL` (по умолчанию `/api`).
+
+### Tests
+
+Backend (нужна отдельная тестовая БД; имя должно содержать `_Test`):
+
+```powershell
+$env:MINIECOMMERCE_TEST_DB = "Server=localhost;Database=MiniEcommerce_Test;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet test
+```
+
+Frontend:
+
+```powershell
+cd src/Frontend/PS.MiniEcommerce
+npm run test       # Vitest
+npm run lint       # oxlint + eslint
+```
+
+### Development Authentication
+
+В окружении Development аутентификация выполняется заголовком `X-Test-User` со значениями `alice` или `bob`. Механизм зарегистрирован только в Development и недоступен в Production; неизвестные значения не аутентифицируют запрос. Во frontend identity выбирается в селекторе "dev identity" в шапке (`Header.vue`), который присутствует только в dev-сборке (`import.meta.env.DEV`). Подробности — в `docs/architecture/api.md` §2.1 и `docs/FRONTEND.md` §4.
+
+### Known Issues / Deferred
+
+Осознанно принятые и отложенные за пределами MVP отклонения от контракта перечислены в `docs/DECISIONS.md` §13.
 
 ## License
 

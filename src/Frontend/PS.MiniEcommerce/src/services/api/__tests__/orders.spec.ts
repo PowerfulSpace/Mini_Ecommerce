@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { createPinia, setActivePinia } from 'pinia'
 import { apiClient } from '@/services/api/client'
-import { createOrder, getOrder, getOrders } from '@/services/api/orders'
+import { createOrder, cancelOrder, getOrder, getOrders } from '@/services/api/orders'
 import type { OrderDetail, OrderSummary, Paginated } from '@/types/api'
 
 const originalAdapter = apiClient.defaults.adapter
@@ -143,5 +143,37 @@ describe('orders API', () => {
       status: 404,
       code: 'order_not_found',
     })
+  })
+
+  it('cancelOrder posts without If-Match or Idempotency-Key and an empty body', async () => {
+    const cancelled: OrderDetail = { ...order, status: 'Cancelled' }
+    let seen: {
+      url?: string
+      method?: string
+      ifMatch?: unknown
+      idempotencyKey?: unknown
+      data?: unknown
+    } = {}
+
+    apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+      seen = {
+        url: config.url,
+        method: config.method,
+        ifMatch: config.headers.get('If-Match'),
+        idempotencyKey: config.headers.get('Idempotency-Key'),
+        data: config.data,
+      }
+      return { data: cancelled, status: 200, statusText: 'OK', headers: {}, config }
+    }
+
+    const result = await cancelOrder('order-1')
+
+    expect(seen.url).toBe('/orders/order-1/cancel')
+    expect(seen.method).toBe('post')
+    expect(seen.ifMatch).toBeFalsy()
+    expect(seen.idempotencyKey).toBeFalsy()
+    expect(seen.data).toBeUndefined()
+    expect(result).toEqual(cancelled)
+    expect(result.status).toBe('Cancelled')
   })
 })

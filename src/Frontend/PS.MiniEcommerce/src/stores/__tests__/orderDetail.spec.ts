@@ -2,16 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { useOrderDetailStore } from '@/stores/orderDetail'
-import { getOrder } from '@/services/api/orders'
+import { cancelOrder, getOrder } from '@/services/api/orders'
 import type { ApiError, OrderDetail } from '@/types/api'
 
 vi.mock('@/services/api/orders', () => ({
   createOrder: vi.fn(),
   getOrders: vi.fn(),
   getOrder: vi.fn(),
+  cancelOrder: vi.fn(),
 }))
 
 const getOrderMock = vi.mocked(getOrder)
+const cancelOrderMock = vi.mocked(cancelOrder)
 
 const order: OrderDetail = {
   id: 'order-1',
@@ -34,6 +36,7 @@ describe('orderDetailStore', () => {
     localStorage.clear()
     setActivePinia(createPinia())
     getOrderMock.mockReset()
+    cancelOrderMock.mockReset()
   })
 
   it('fetch loads the order and marks it as loaded', async () => {
@@ -95,6 +98,7 @@ describe('orderDetailStore', () => {
     getOrderMock.mockResolvedValue(order)
     const store = useOrderDetailStore()
     await store.fetch('order-1')
+    store.cancelError = { status: 409, code: 'order_already_cancelled', raw: null }
 
     store.reset()
 
@@ -102,6 +106,8 @@ describe('orderDetailStore', () => {
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
     expect(store.notFound).toBe(false)
+    expect(store.cancelling).toBe(false)
+    expect(store.cancelError).toBeNull()
     expect(store.isLoaded).toBe(false)
   })
 
@@ -114,5 +120,104 @@ describe('orderDetailStore', () => {
     useAuthStore().setUser('bob')
 
     expect(store.order).toBeNull()
+  })
+
+  it('cancel replaces the order with the returned Cancelled order', async () => {
+    const cancelled: OrderDetail = { ...order, status: 'Cancelled' }
+    getOrderMock.mockResolvedValue(order)
+    cancelOrderMock.mockResolvedValue(cancelled)
+    const store = useOrderDetailStore()
+    await store.fetch('order-1')
+
+    await store.cancel()
+
+    expect(cancelOrderMock).toHaveBeenCalledWith('order-1')
+    expect(store.order?.status).toBe('Cancelled')
+    expect(store.cancelError).toBeNull()
+    expect(store.cancelling).toBe(false)
+  })
+
+  it('cancel is a no-op when the order is not Cancellable', async () => {
+    const cancelled: OrderDetail = { ...order, status: 'Cancelled' }
+    getOrderMock.mockResolvedValue(cancelled)
+    const store = useOrderDetailStore()
+    await store.fetch('order-1')
+
+    await store.cancel()
+
+    expect(cancelOrderMock).not.toHaveBeenCalled()
+  })
+
+  it('cancel is a no-op when no order is loaded', async () => {
+    const store = useOrderDetailStore()
+
+    await store.cancel()
+
+    expect(cancelOrderMock).not.toHaveBeenCalled()
+    expect(store.cancelError).toBeNull()
+  })
+
+  it('cancel surfaces order_already_cancelled and refreshes the order', async () => {
+    const cancelled: OrderDetail = { ...order, status: 'Cancelled' }
+    getOrderMock.mockResolvedValue(order)
+    cancelOrderMock.mockRejectedValue({
+      status: 409,
+      code: 'order_already_cancelled',
+      raw: null,
+    } as ApiError)
+    const store = useOrderDetailStore()
+    await store.fetch('order-1')
+
+    // The refetch performed during handling shows the persisted status.
+    getOrderMock.mockResolvedValue(cancelled)
+
+    await store.cancel()
+
+    expect(store.cancelError?.code).toBe('order_already_cancelled')
+    expect(store.order?.status).toBe('Cancelled')
+  })
+
+  it('cancel treats order_not_found as a not-found outcome', async () => {
+    getOrderMock.mockResolvedValue(order)
+    cancelOrderMock.mockRejectedValue({
+      status: 404,
+      code: 'order_not_found',
+      raw: null,
+    } as ApiError)
+    const store = useOrderDetailStore()
+    await store.fetch('order-1')
+
+    await store.cancel()
+
+    expect(store.cancelError?.code).toBe('order_not_found')
+    expect(store.notFound).toBe(true)
+    expect(store.order).toBeNull()
+  })
+
+  it('cancel keeps the order on a network failure', async () => {
+    getOrderMock.mockResolvedValue(order)
+    cancelOrderMock.mockRejectedValue({ status: 0, raw: null } as ApiError)
+    const store = useOrderDetailStore()
+    await store.fetch('order-1')
+
+    await store.cancel()
+
+    expect(store.cancelError).toBeTruthy()
+    expect(store.order).toEqual(order)
+    expect(store.cancelling).toBe(false)
+  })
+
+  it('canCancel reflects the order status and in-flight state', async () => {
+    getOrderMock.mockResolvedValue(order)
+    const store = useOrderDetailStore()
+    expect(store.canCancel).toBe(false)
+
+    await store.fetch('order-1')
+
+    expect(store.canCancel).toBe(true)
+
+    const cancelled: OrderDetail = { ...order, status: 'Cancelled' }
+    store.order = cancelled
+    expect(store.canCancel).toBe(false)
   })
 })

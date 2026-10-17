@@ -25,9 +25,29 @@
             <span class="order-detail__id">{{ store.order.id }}</span>
             <span class="order-detail__date">{{ formatDate(store.order.createdAtUtc) }}</span>
           </div>
-          <n-tag size="small" :type="statusType(store.order.status)">
-            {{ statusLabel(store.order.status) }}
-          </n-tag>
+          <div class="order-detail__header-actions">
+            <n-tag size="small" :type="statusType(store.order.status)">
+              {{ statusLabel(store.order.status) }}
+            </n-tag>
+            <n-popconfirm
+              v-if="showCancel"
+              positive-text="Да, отменить"
+              negative-text="Нет"
+              @positive-click="onCancel"
+            >
+              <template #trigger>
+                <n-button
+                  type="error"
+                  secondary
+                  :loading="store.cancelling"
+                  :disabled="store.cancelling || store.loading"
+                >
+                  Отменить заказ
+                </n-button>
+              </template>
+              Отменить заказ? Действие необратимо.
+            </n-popconfirm>
+          </div>
         </div>
 
         <table class="order-items">
@@ -60,12 +80,13 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { NAlert, NButton, NCard, NResult, NSpin, NTag } from 'naive-ui'
+import { NAlert, NButton, NCard, NPopconfirm, NResult, NSpin, NTag, useMessage } from 'naive-ui'
 import { useOrderDetailStore } from '@/stores/orderDetail'
 import type { OrderStatus } from '@/types/api'
 
 const route = useRoute()
 const store = useOrderDetailStore()
+const message = useMessage()
 
 const usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
@@ -96,6 +117,10 @@ const errorMessage = computed(
   () => store.error?.detail || store.error?.title || 'Не удалось загрузить заказ',
 )
 
+// Visibility is tied to the order status, while `canCancel` additionally gates
+// the button while a cancellation is already running (disabled, not removed).
+const showCancel = computed(() => store.order?.status === 'Created' && !store.notFound)
+
 function currentId(): string {
   const raw = route.params.id
   return Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
@@ -103,6 +128,31 @@ function currentId(): string {
 
 function reload(): void {
   void store.fetch(currentId())
+}
+
+async function onCancel(): Promise<void> {
+  const previousStatus = store.order?.status
+
+  await store.cancel()
+
+  if (store.cancelError?.code === 'order_not_found') {
+    // The not-found screen takes over; no toast is needed.
+    return
+  }
+
+  if (store.cancelError?.code === 'order_already_cancelled') {
+    message.warning('Заказ уже был отменён')
+    return
+  }
+
+  if (store.cancelError) {
+    message.error(store.cancelError.detail || store.cancelError.title || 'Не удалось отменить заказ')
+    return
+  }
+
+  if (previousStatus === 'Created' && store.order?.status === 'Cancelled') {
+    message.success('Заказ отменён')
+  }
 }
 
 watch(
@@ -140,6 +190,12 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.order-detail__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .order-detail__id {

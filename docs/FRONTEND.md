@@ -343,16 +343,41 @@ The frontend MVP does not include:
 - A complex design system
 - A dedicated administrative interface
 
-## 17. Remaining Details
+## 17. Resolved Implementation Details
 
 Endpoint paths, DTO schemas, error codes, and the cart precondition mechanism are defined in `architecture/api.md` and are not open questions.
 
-The following details remain to be selected during frontend implementation and must not change the backend contract:
+The details that were left open for frontend implementation have been decided during Phase 9–10. They do not change the backend contract.
 
-- How the frontend safely retains an outstanding checkout idempotency key.
-- Frontend test framework and exact dependency versions.
+### 17.1 Outstanding checkout idempotency key
 
-These details must not be resolved by inventing incompatible client-side contracts.
+- The outstanding key is persisted in `sessionStorage` under the name `mini-ecommerce:checkout-key` (`src/utils/idempotency.ts`, `KEY_STORAGE_NAME`). `sessionStorage` is used because the key is scoped to a single browser tab/session and must not leak across tabs.
+- When `sessionStorage` is unavailable (SSR, private mode, storage disabled), an in-memory fallback preserves retry behavior for the page lifetime.
+- The key is generated as a UUID v4, which satisfies the documented format in `DECISIONS.md` §10. It is created on the first checkout attempt and reused for retries of the same attempt. It is cleared only after a confirmed success or a persisted final business error.
+
+### 17.2 Stale or missing cart precondition (`412` / `428`)
+
+- A `412 cart_version_conflict` or `428 precondition_required` is treated as a version conflict: the cart is re-fetched to obtain the current `ETag` and the authoritative server state, and the conflict is surfaced to the user. The stale mutation is never replayed automatically (`src/stores/cart.ts`, `runMutation`).
+- Checkout handles the same codes as final business errors: the idempotency key is spent, the cart is re-fetched, and the user must start a new attempt with a new key (`src/stores/checkout.ts`).
+
+### 17.3 Cart `ETag`
+
+- The `ETag` is held in `cartStore` (`src/stores/cart.ts`). It is updated from every cart response (read or mutation) and sent back through `If-Match` on every cart mutation and on checkout. No version field is placed in request bodies.
+- The cart service (`src/services/api/cart.ts`) rejects a cart response that does not carry an `ETag`, because a missing version would make subsequent mutations unsafe.
+
+### 17.4 Development identity selector
+
+- The selector lives in `src/components/layout/Header.vue` and is rendered only when `import.meta.env.DEV` is true, so it is absent from the production build.
+- The selected identity is stored in `localStorage` (`mini-ecommerce:test-user`) and attached as the `X-Test-User` header by `apiClient`. Public catalog requests opt out via `omitTestUserHeader` so they are sent without an identity header.
+- Switching identity resets user-scoped stores so another user's cart and orders are never shown.
+
+### 17.5 Order confirmation
+
+- After a successful checkout the client navigates to the order confirmation route, whose view (`OrderConfirmationView.vue`) immediately redirects to `/orders/:id`. The order details screen is the single source of truth; the confirmation screen does not duplicate its UI.
+
+### 17.6 Testing tooling
+
+- Frontend tests use Vitest with `@vue/test-utils` and `happy-dom`. Dependency versions are pinned in `package.json`.
 
 ## 18. Related Documents
 
