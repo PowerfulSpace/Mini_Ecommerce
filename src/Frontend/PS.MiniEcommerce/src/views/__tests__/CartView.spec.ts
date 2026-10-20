@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { NButton } from 'naive-ui'
+import { NButton, NInputNumber } from 'naive-ui'
 import CartView from '@/views/CartView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCheckoutStore } from '@/stores/checkout'
-import { getCart } from '@/services/api/cart'
+import { getCart, updateItem } from '@/services/api/cart'
 import type { ApiError, Cart, CartItem } from '@/types/api'
 
 vi.mock('@/services/api/cart', () => ({
@@ -24,6 +24,7 @@ vi.mock('vue-router', () => ({
 }))
 
 const getCartMock = vi.mocked(getCart)
+const updateItemMock = vi.mocked(updateItem)
 
 function checkoutButton(wrapper: ReturnType<typeof mountView>) {
   return wrapper.findAllComponents(NButton).find((button) => button.text().includes('Оформить'))
@@ -53,6 +54,7 @@ describe('CartView', () => {
     sessionStorage.clear()
     setActivePinia(createPinia())
     getCartMock.mockReset()
+    updateItemMock.mockReset()
     pushMock.mockReset()
   })
 
@@ -183,5 +185,42 @@ describe('CartView', () => {
     await flushPromises()
 
     expect(getCartMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('recalculates the line total and the total amount from the draft immediately', async () => {
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    wrapper.findComponent(NInputNumber).vm.$emit('update:value', 3)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.cart-item__line-total').text()).toBe('$28.50')
+    expect(wrapper.find('.cart__total').text()).toBe('Итого: $28.50')
+  })
+
+  it('syncs the draft back to the server quantity when the update fails', async () => {
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+    updateItemMock.mockRejectedValue({
+      status: 500,
+      detail: 'Не удалось обновить корзину',
+      raw: null,
+    } as ApiError)
+
+    const wrapper = mountView()
+    await flushPromises()
+    const input = wrapper.findComponent(NInputNumber)
+
+    input.vm.$emit('update:value', 3)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.cart-item__line-total').text()).toBe('$28.50')
+
+    input.vm.$emit('blur')
+    await flushPromises()
+
+    expect(updateItemMock).toHaveBeenCalledWith('p1', 3, '"V1"')
+    expect(wrapper.find('.cart-item__line-total').text()).toBe('$19.00')
+    expect(input.props('value')).toBe(2)
   })
 })

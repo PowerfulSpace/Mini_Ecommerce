@@ -49,7 +49,7 @@
                 @update:value="(value) => onQuantityInput(item, value)"
                 @blur="() => onQuantityCommit(item)"
               />
-              <span class="cart-item__line-total">{{ formatPrice(item.lineTotal) }}</span>
+              <span class="cart-item__line-total">{{ formatPrice(lineTotalOf(item)) }}</span>
               <n-button secondary type="error" :disabled="store.mutating" @click="onRemove(item)">
                 Удалить
               </n-button>
@@ -60,7 +60,7 @@
     </n-spin>
 
     <div v-if="!store.error" class="cart__footer">
-      <span class="cart__total">Итого: {{ formatPrice(store.totalAmount) }}</span>
+      <span class="cart__total">Итого: {{ formatPrice(displayTotalAmount) }}</span>
       <n-button
         type="primary"
         :loading="checkout.submitting"
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { NAlert, NButton, NCard, NEmpty, NInputNumber, NSpin, NTag } from 'naive-ui'
 import { useCartStore } from '@/stores/cart'
@@ -102,13 +102,50 @@ const checkoutErrorMessage = computed(
 )
 
 // Local drafts let the quantity commit on blur instead of firing a mutation on
-// every keystroke. The server value remains authoritative: on commit the draft is
-// dropped, so a rejected update falls back to the authoritative quantity.
+// every keystroke. The server value remains authoritative: drafts are synced
+// from store.items whenever the cart or an error changes.
 const drafts = reactive<Record<string, number>>({})
 
 function quantityOf(item: CartItem): number {
   return drafts[item.productId] ?? item.quantity
 }
+
+const displayTotalAmount = computed(() =>
+  store.items.reduce((sum, item) => sum + item.unitPrice * quantityOf(item), 0),
+)
+
+function lineTotalOf(item: CartItem): number {
+  return item.unitPrice * quantityOf(item)
+}
+
+function syncDrafts(items: CartItem[]): void {
+  for (const item of items) {
+    if (drafts[item.productId] !== undefined) {
+      drafts[item.productId] = item.quantity
+    }
+  }
+
+  for (const productId of Object.keys(drafts)) {
+    if (!items.some((item) => item.productId === productId)) {
+      delete drafts[productId]
+    }
+  }
+}
+
+watch(
+  () => store.items,
+  (items) => syncDrafts(items),
+  { deep: true },
+)
+
+watch(
+  () => store.error,
+  (error) => {
+    if (error !== null) {
+      syncDrafts(store.items)
+    }
+  },
+)
 
 function onQuantityInput(item: CartItem, value: number | null): void {
   if (typeof value === 'number') {
@@ -118,9 +155,13 @@ function onQuantityInput(item: CartItem, value: number | null): void {
 
 async function onQuantityCommit(item: CartItem): Promise<void> {
   const next = drafts[item.productId]
-  delete drafts[item.productId]
 
-  if (next === undefined || next === item.quantity) {
+  if (next === undefined) {
+    return
+  }
+
+  if (next === item.quantity) {
+    delete drafts[item.productId]
     return
   }
 
