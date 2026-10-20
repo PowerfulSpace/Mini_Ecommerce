@@ -96,7 +96,7 @@ describe('productStore', () => {
     expect(store.isLoaded).toBe(false)
   })
 
-  it('is reset when the development identity changes', async () => {
+  it('keeps its state when the development identity changes', async () => {
     getProductMock.mockResolvedValue(product)
     const store = useProductStore()
     await store.fetch('p1')
@@ -104,6 +104,6 @@ describe('productStore', () => {
 
     useAuthStore().setUser('bob')
 
-    expect(store.product).toBeNull()
+    expect(store.product).toEqual(product)
   })
 })

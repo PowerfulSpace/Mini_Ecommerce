@@ -369,7 +369,7 @@ The details that were left open for frontend implementation have been decided du
 
 - The selector lives in `src/components/layout/Header.vue` and is rendered only when `import.meta.env.DEV` is true, so it is absent from the production build.
 - The selected identity is stored in `localStorage` (`mini-ecommerce:test-user`) and attached as the `X-Test-User` header by `apiClient`. Public catalog requests opt out via `omitTestUserHeader` so they are sent without an identity header.
-- Switching identity resets user-scoped stores so another user's cart and orders are never shown.
+- Switching identity resets user-scoped stores and increments `identityVersion`. User-scoped screens use `useUserScopedFetch` to refetch in place, so the user stays on the current route. Public catalog and product stores are not reset by an identity change.
 
 ### 17.5 Order confirmation
 

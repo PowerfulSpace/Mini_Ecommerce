@@ -16,6 +16,7 @@ function readStoredUser(): TestUser | null {
 
 export const useAuthStore = defineStore('auth', () => {
   const testUser = ref<TestUser | null>(readStoredUser())
+  const identityVersion = ref(0)
 
   const isAuthenticated = computed(() => testUser.value !== null)
 
@@ -50,18 +51,21 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(user: TestUser): void {
     testUser.value = user
+    identityVersion.value += 1
     persist()
     resetUserScopedState()
   }
 
   function clear(): void {
     testUser.value = null
+    identityVersion.value += 1
     persist()
     resetUserScopedState()
   }
 
   return {
     testUser,
+    identityVersion,
     isAuthenticated,
     setUser,
     clear,

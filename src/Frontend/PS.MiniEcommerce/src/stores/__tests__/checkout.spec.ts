@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 import { useCheckoutStore } from '@/stores/checkout'
 import { useCartStore } from '@/stores/cart'
 import { createOrder } from '@/services/api/orders'
 import { getCart } from '@/services/api/cart'
-import { peekKey } from '@/utils/idempotency'
+import { getOrCreateKey, peekKey } from '@/utils/idempotency'
 import type { ApiError, Cart, CartItem, OrderDetail } from '@/types/api'
 
 vi.mock('@/services/api/orders', () => ({ createOrder: vi.fn() }))
@@ -190,6 +191,21 @@ describe('checkoutStore', () => {
     expect(secondEtag).toBe(firstEtag)
     expect(checkout.lastOrderId).toBe('order-1')
     expect(peekKey()).toBeNull()
+  })
+
+  it('is reset when the development identity changes without clearing the idempotency key', () => {
+    const checkout = useCheckoutStore()
+    checkout.error = apiError({ status: 500 })
+    checkout.inProgress = true
+    checkout.lastOrderId = 'order-1'
+    const key = getOrCreateKey()
+
+    useAuthStore().setUser('bob')
+
+    expect(checkout.error).toBeNull()
+    expect(checkout.inProgress).toBe(false)
+    expect(checkout.lastOrderId).toBeNull()
+    expect(peekKey()).toBe(key)
   })
 
   it('submit refuses to run without a cart ETag', async () => {

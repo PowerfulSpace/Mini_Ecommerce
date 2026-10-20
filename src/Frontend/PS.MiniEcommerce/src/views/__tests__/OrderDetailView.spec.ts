@@ -3,6 +3,7 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { NPopconfirm } from 'naive-ui'
 import OrderDetailView from '@/views/OrderDetailView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { cancelOrder, getOrder } from '@/services/api/orders'
 import type { ApiError, OrderDetail } from '@/types/api'
 
@@ -206,5 +207,19 @@ describe('OrderDetailView', () => {
     await flushPromises()
 
     expect(messageMock.error).toHaveBeenCalledWith('Сервер недоступен')
+  })
+
+  it('refetches the current order when the development identity changes', async () => {
+    getOrderMock.mockResolvedValue(order)
+
+    mountView()
+    await flushPromises()
+    expect(getOrderMock).toHaveBeenCalledTimes(1)
+
+    useAuthStore().setUser('bob')
+    await flushPromises()
+
+    expect(getOrderMock).toHaveBeenCalledTimes(2)
+    expect(getOrderMock).toHaveBeenLastCalledWith('order-1')
   })
 })

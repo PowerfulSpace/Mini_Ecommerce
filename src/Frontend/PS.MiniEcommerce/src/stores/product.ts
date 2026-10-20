@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getProduct } from '@/services/api/products'
-import { useAuthStore } from '@/stores/auth'
 import type { ApiError, Product } from '@/types/api'
 
 export const useProductStore = defineStore('product', () => {
@@ -43,10 +42,6 @@ export const useProductStore = defineStore('product', () => {
     error.value = null
     notFound.value = false
   }
-
-  // Product details are public today, but the store is registered as user-scoped
-  // state so switching identity cannot leak stale data once cart actions exist.
-  useAuthStore().registerUserScopedReset(reset)
 
   return { product, loading, error, notFound, isLoaded, fetch, reset }
 })

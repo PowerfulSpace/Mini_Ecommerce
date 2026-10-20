@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { createOrder } from '@/services/api/orders'
+import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { clearKey, getOrCreateKey } from '@/utils/idempotency'
 import type { ApiError } from '@/types/api'
@@ -95,6 +96,8 @@ export const useCheckoutStore = defineStore('checkout', () => {
     inProgress.value = false
     lastOrderId.value = null
   }
+
+  useAuthStore().registerUserScopedReset(reset)
 
   function clearOutstandingKey(): void {
     clearKey()

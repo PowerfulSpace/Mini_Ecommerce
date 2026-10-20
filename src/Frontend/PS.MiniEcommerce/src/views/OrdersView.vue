@@ -55,6 +55,7 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { NAlert, NButton, NCard, NEmpty, NPagination, NSpin, NTag } from 'naive-ui'
 import { useOrdersStore } from '@/stores/orders'
+import { useUserScopedFetch } from '@/composables/useUserScopedFetch'
 import type { OrderStatus } from '@/types/api'
 
 const store = useOrdersStore()
@@ -110,6 +111,8 @@ function reload(): void {
 onMounted(() => {
   void store.fetchPage(1)
 })
+
+useUserScopedFetch(() => store.fetchPage(store.page || 1))
 </script>
 
 <style scoped>

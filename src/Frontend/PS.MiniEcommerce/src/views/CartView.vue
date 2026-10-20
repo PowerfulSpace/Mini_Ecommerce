@@ -79,6 +79,7 @@ import { useRouter } from 'vue-router'
 import { NAlert, NButton, NCard, NEmpty, NInputNumber, NSpin, NTag } from 'naive-ui'
 import { useCartStore } from '@/stores/cart'
 import { useCheckoutStore } from '@/stores/checkout'
+import { useUserScopedFetch } from '@/composables/useUserScopedFetch'
 import type { CartItem } from '@/types/api'
 
 const store = useCartStore()
@@ -151,6 +152,8 @@ async function onCheckout(): Promise<void> {
 onMounted(() => {
   void store.fetch()
 })
+
+useUserScopedFetch(() => store.fetch())
 </script>
 
 <style scoped>

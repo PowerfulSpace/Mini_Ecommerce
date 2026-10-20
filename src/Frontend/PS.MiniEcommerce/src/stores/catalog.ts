@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getProducts } from '@/services/api/products'
-import { useAuthStore } from '@/stores/auth'
 import type { ApiError, Product } from '@/types/api'
 
 // Documented pagination bounds (DECISIONS.md section 10).
@@ -62,11 +61,6 @@ export const useCatalogStore = defineStore('catalog', () => {
     loading.value = false
     error.value = null
   }
-
-  // The catalog is public, so it carries no user-specific data today, but it is
-  // registered as user-scoped state so switching identity cannot leak a stale
-  // catalog once user-specific behavior is added in later Phase 10 steps.
-  useAuthStore().registerUserScopedReset(reset)
 
   return {
     items,

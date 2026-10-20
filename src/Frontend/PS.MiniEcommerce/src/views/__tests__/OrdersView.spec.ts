@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OrdersView from '@/views/OrdersView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useOrdersStore } from '@/stores/orders'
 import { getOrders } from '@/services/api/orders'
 import type { ApiError, OrderSummary, Paginated } from '@/types/api'
@@ -107,5 +108,19 @@ describe('OrdersView', () => {
       name: 'order-detail',
       params: { id: order.id },
     })
+  })
+
+  it('refetches the current page when the development identity changes', async () => {
+    getOrdersMock.mockResolvedValue(page([order]))
+
+    mountView()
+    await flushPromises()
+    expect(getOrdersMock).toHaveBeenCalledTimes(1)
+
+    useAuthStore().setUser('bob')
+    await flushPromises()
+
+    expect(getOrdersMock).toHaveBeenCalledTimes(2)
+    expect(getOrdersMock).toHaveBeenLastCalledWith({ page: 1, pageSize: 20 })
   })
 })

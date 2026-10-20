@@ -100,7 +100,7 @@ describe('catalogStore', () => {
     expect(store.isEmpty).toBe(true)
   })
 
-  it('is reset when the development identity changes', async () => {
+  it('keeps its state when the development identity changes', async () => {
     getProductsMock.mockResolvedValue(page([product], 1, 20, 1))
     const store = useCatalogStore()
     await store.fetchPage(1)
@@ -108,7 +108,7 @@ describe('catalogStore', () => {
 
     useAuthStore().setUser('alice')
 
-    expect(store.items).toEqual([])
-    expect(store.totalCount).toBe(0)
+    expect(store.items).toEqual([product])
+    expect(store.totalCount).toBe(1)
   })
 })

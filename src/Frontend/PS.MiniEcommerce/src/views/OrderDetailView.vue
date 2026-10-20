@@ -82,6 +82,7 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { NAlert, NButton, NCard, NPopconfirm, NResult, NSpin, NTag, useMessage } from 'naive-ui'
 import { useOrderDetailStore } from '@/stores/orderDetail'
+import { useUserScopedFetch } from '@/composables/useUserScopedFetch'
 import type { OrderStatus } from '@/types/api'
 
 const route = useRoute()
@@ -162,6 +163,8 @@ watch(
   },
   { immediate: true },
 )
+
+useUserScopedFetch(() => store.fetch(currentId()))
 </script>
 
 <style scoped>

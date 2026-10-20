@@ -68,6 +68,43 @@ describe('authStore', () => {
     expect(calls).toBe(2)
   })
 
+  it('increments identityVersion on setUser', () => {
+    const store = useAuthStore()
+
+    store.setUser('alice')
+
+    expect(store.identityVersion).toBe(1)
+  })
+
+  it('increments identityVersion on clear', () => {
+    const store = useAuthStore()
+
+    store.clear()
+
+    expect(store.identityVersion).toBe(1)
+  })
+
+  it('increments identityVersion even when the same user is selected again', () => {
+    const store = useAuthStore()
+
+    store.setUser('alice')
+    store.setUser('alice')
+
+    expect(store.identityVersion).toBe(2)
+  })
+
+  it('increments identityVersion before running resetters', () => {
+    const store = useAuthStore()
+    let versionDuringReset = -1
+    store.registerUserScopedReset(() => {
+      versionDuringReset = store.identityVersion
+    })
+
+    store.setUser('alice')
+
+    expect(versionDuringReset).toBe(1)
+  })
+
   it('unregisters a user-scoped resetter through the returned function', () => {
     const store = useAuthStore()
     let calls = 0

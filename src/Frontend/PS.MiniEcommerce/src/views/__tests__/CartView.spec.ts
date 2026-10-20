@@ -3,6 +3,7 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { NButton } from 'naive-ui'
 import CartView from '@/views/CartView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCheckoutStore } from '@/stores/checkout'
 import { getCart } from '@/services/api/cart'
@@ -169,5 +170,18 @@ describe('CartView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Заказ обрабатывается')
+  })
+
+  it('refetches the cart when the development identity changes', async () => {
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+
+    mountView()
+    await flushPromises()
+    expect(getCartMock).toHaveBeenCalledTimes(1)
+
+    useAuthStore().setUser('bob')
+    await flushPromises()
+
+    expect(getCartMock).toHaveBeenCalledTimes(2)
   })
 })
