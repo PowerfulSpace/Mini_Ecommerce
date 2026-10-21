@@ -1,18 +1,18 @@
-# Instructions for AI Agents
+# Инструкции для ИИ-агентов
 
-## 1. Purpose
+## 1. Назначение
 
-These instructions define how AI agents must work with the Mini E-commerce repository.
+Эти инструкции определяют, как ИИ-агенты должны работать с репозиторием Mini E-commerce.
 
-The goal is to implement the project incrementally according to the approved requirements, architecture, domain rules, and technical decisions.
+Цель — реализовывать проект инкрементально в соответствии с утверждёнными требованиями, архитектурой, правилами домена и техническими решениями.
 
-The agent must not independently expand the project scope or replace approved decisions with alternative designs.
+Агент не должен самостоятельно расширять объём проекта или заменять утверждённые решения альтернативными проектами.
 
-## 2. Mandatory Documentation
+## 2. Обязательная документация
 
-Before implementing or modifying code, read the relevant project documentation.
+Перед реализацией или изменением кода прочитайте соответствующую документацию проекта.
 
-Start with:
+Начните с:
 
 1. `README.md`
 2. `docs/en/PROJECT.md`
@@ -23,96 +23,96 @@ Start with:
 7. `docs/en/architecture/architecture.md`
 8. `docs/en/architecture/data-model.md`
 9. `docs/en/architecture/api.md`
-10. `docs/en/FRONTEND.md`, when working on the frontend
-11. Relevant documents in `docs/en/adr/`
+10. `docs/en/FRONTEND.md`, при работе над фронтендом
+11. Соответствующие документы в `docs/en/adr/`
 
-Some files may not exist during the initial documentation phase. Do not assume missing documents are approved specifications. Create or modify them only as part of the agreed documentation workflow.
+Некоторые файлы могут отсутствовать на начальной фазе документирования. Не считайте отсутствующие документы утверждёнными спецификациями. Создавайте или изменяйте их только в рамках согласованного процесса документирования.
 
-## 3. Source of Truth
+## 3. Источник истины
 
-Use the documents according to their responsibilities:
+Используйте документы согласно их назначению:
 
-- `docs/en/PROJECT.md` defines the project's purpose, scope, and goals.
-- `docs/en/SPEC.md` defines functional requirements and acceptance criteria.
-- `docs/en/DOMAIN.md` defines domain concepts, business rules, and invariants.
-- `docs/en/DECISIONS.md` indexes approved technical and architectural decisions.
-- `docs/en/architecture/architecture.md` defines application architecture and layer boundaries.
-- `docs/en/architecture/data-model.md` defines the database model and persistence constraints.
-- `docs/en/architecture/api.md` defines HTTP endpoints and API contracts.
-- `docs/en/FRONTEND.md` defines frontend requirements and implementation conventions.
-- `docs/en/ROADMAP.md` defines the implementation sequence and stage boundaries.
-- `docs/en/adr/` contains detailed Architecture Decision Records.
-- `README.md` provides an overview and navigation.
-- `AGENTS.md` defines working rules for AI agents.
+- `docs/en/PROJECT.md` определяет назначение, объём и цели проекта.
+- `docs/en/SPEC.md` определяет функциональные требования и критерии приёмки.
+- `docs/en/DOMAIN.md` определяет концепции домена, бизнес-правила и инварианты.
+- `docs/en/DECISIONS.md` индексирует утверждённые технические и архитектурные решения.
+- `docs/en/architecture/architecture.md` определяет архитектуру приложения и границы слоёв.
+- `docs/en/architecture/data-model.md` определяет модель базы данных и ограничения хранения.
+- `docs/en/architecture/api.md` определяет HTTP-эндпоинты и контракты API.
+- `docs/en/FRONTEND.md` определяет требования к фронтенду и соглашения реализации.
+- `docs/en/ROADMAP.md` определяет последовательность реализации и границы этапов.
+- `docs/en/adr/` содержит подробные Architecture Decision Records.
+- `README.md` предоставляет обзор и навигацию.
+- `AGENTS.md` определяет правила работы для ИИ-агентов.
 
-If documents conflict, do not silently choose one interpretation. Identify the conflict and ask for clarification before implementing the affected behavior.
+Если документы конфликтуют, не выбирайте молча одну интерпретацию. Выявите конфликт и запросите разъяснение перед реализацией затронутого поведения.
 
-Do not duplicate detailed specifications unnecessarily across multiple files. Update the document responsible for the relevant information and add references where appropriate.
+Не дублируйте подробные спецификации без необходимости в нескольких файлах. Обновляйте документ, отвечающий за соответствующую информацию, и добавляйте ссылки там, где это уместно.
 
-## Bilingual documentation
+## Двуязычная документация
 
-- `docs/en/` is the source of truth for all project documentation.
-- `docs/ru/` is a companion translation. When EN and RU disagree, EN wins.
-- The RU translation status is tracked inside each RU file via a header note (see `docs/ru/` stubs) or, for `DECISIONS.md` and ADRs, must be kept in sync strictly.
-- Root-level `README.md` and `AGENTS.md` are outside the bilingual policy: `README.md` stays Russian as the human-facing entry point; `AGENTS.md` language is being migrated to Russian in a separate step and currently remains English.
-- Do not translate: code identifiers, error codes, HTTP headers, SQL tokens, entity names, ADR statuses, config/env keys, .NET type names, frontend storage keys, API routes, ProblemDetails field names.
+- `docs/en/` — источник истины для всей проектной документации.
+- `docs/ru/` — перевод-компаньон. При расхождении EN и RU верна английская версия.
+- Статус перевода отслеживается внутри каждого RU-файла через заголовочную пометку (см. заглушки в `docs/ru/`); для `DECISIONS.md` и ADR русская версия должна строго синхронизироваться.
+- Корневые `README.md` и `AGENTS.md` находятся вне политики двуязычности: `README.md` остаётся русским как человекочитаемая точка входа; `AGENTS.md` теперь на русском.
+- Не переводите: идентификаторы кода, коды ошибок, HTTP-заголовки, SQL-токены, имена сущностей, статусы ADR, ключи конфигурации и переменных окружения, имена типов .NET, ключи frontend-хранилища, маршруты API, имена полей ProblemDetails.
 
-## 4. Scope Control
+## 4. Контроль объёма
 
-Implement only functionality included in the approved MVP and the current roadmap stage.
+Реализуйте только функциональность, входящую в утверждённый MVP и текущий этап плана разработки.
 
-Do not introduce the following unless explicitly approved:
+Не вводите следующее без явного одобрения:
 
-- Payment processing.
-- Delivery management.
-- Coupons or discounts.
-- Microservices.
-- Message brokers.
-- Complex authentication or authorization systems.
-- Additional infrastructure or abstractions without a concrete requirement.
-- Features that are not part of the agreed scope.
+- Обработку платежей.
+- Управление доставкой.
+- Купоны или скидки.
+- Микросервисы.
+- Брокеры сообщений.
+- Сложные системы аутентификации или авторизации.
+- Дополнительную инфраструктуру или абстракции без конкретного требования.
+- Функции, не входящие в согласованный объём.
 
-Do not add speculative abstractions, empty feature directories, or placeholder implementations without a clear purpose.
+Не добавляйте умозрительные абстракции, пустые каталоги функций или реализации-заглушки без ясной цели.
 
-## 5. Architecture Rules
+## 5. Правила архитектуры
 
-The backend follows Clean Architecture.
+Бэкенд следует Clean Architecture.
 
-The backend projects are located under `src/Backend/PS.MiniEcommerce/`:
+Проекты бэкенда расположены в `src/Backend/PS.MiniEcommerce/`:
 
 - `PS.MiniEcommerce.Domain`
 - `PS.MiniEcommerce.Application`
 - `PS.MiniEcommerce.Infrastructure`
 - `PS.MiniEcommerce.API`
 
-The solution is `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx`. It uses the `.slnx` format and stays nested under the backend directory. The `PS.` prefix is deliberate and must be preserved in project names, namespaces, and paths. Do not rename projects or drop the prefix.
+Решение — `src/Backend/PS.MiniEcommerce/PS.MiniEcommerce.slnx`. Оно использует формат `.slnx` и остаётся вложенным в каталог бэкенда. Префикс `PS.` используется намеренно и должен сохраняться в именах проектов, пространствах имён и путях. Не переименовывайте проекты и не отбрасывайте префикс.
 
-The test projects are `tests/PS.MiniEcommerce.UnitTests` and `tests/PS.MiniEcommerce.IntegrationTests`.
+Тестовые проекты — `tests/PS.MiniEcommerce.UnitTests` и `tests/PS.MiniEcommerce.IntegrationTests`.
 
-The frontend is located under `src/Frontend/`.
+Фронтенд расположен в `src/Frontend/`.
 
-Keep responsibilities separated:
+Разделяйте ответственности:
 
-- **Domain:** domain entities, value objects, and business invariants. It must not depend on EF Core, ASP.NET Core, or MediatR.
-- **Application:** use cases, commands, queries, DTOs, validation, application abstractions, and MediatR pipeline behaviors.
-- **Infrastructure:** EF Core, SQL Server integration, persistence configuration, migrations, and implementations of application abstractions.
-- **API:** controllers, dependency injection composition, authentication configuration, HTTP error handling, and health checks.
+- **Domain:** сущности домена, объекты-значения и бизнес-инварианты. Не должен зависеть от EF Core, ASP.NET Core или MediatR.
+- **Application:** сценарии использования, команды, запросы, DTO, валидация, абстракции приложения и поведения конвейера MediatR.
+- **Infrastructure:** интеграция EF Core и SQL Server, конфигурация сохранения данных, миграции и реализации абстракций приложения.
+- **API:** контроллеры, композиция внедрения зависимостей, конфигурация аутентификации, обработка HTTP-ошибок и проверки работоспособности.
 
-Dependencies must point inward toward Domain and Application. Domain must remain independent of infrastructure and presentation concerns.
+Зависимости должны быть направлены внутрь, к Domain и Application. Domain должен оставаться независимым от инфраструктуры и деталей представления.
 
-A separate `Common` project is not part of the MVP. `PS.MiniEcommerce.Common` is not an agreed project: it is scheduled for removal in Phase 1 and must not be referenced, extended, or recreated. Do not create a `Common` project or folder; shared types belong to the layer that owns them.
+Отдельный проект `Common` не входит в MVP. `PS.MiniEcommerce.Common` — не согласованный проект: он запланирован к удалению на этапе 1, и на него нельзя ссылаться, его нельзя расширять или воссоздавать. Не создавайте проект или каталог `Common`; общие типы принадлежат слою, который ими владеет.
 
-Use feature-based organization in Application. Create feature folders when implementing actual functionality, not as empty scaffolding.
+Используйте организацию по функциям в Application. Создавайте каталоги функций при реализации реальной функциональности, а не как пустые заготовки.
 
-Use MediatR for application commands and queries.
+Используйте MediatR для команд и запросов приложения.
 
-Use FluentValidation through a centralized MediatR validation pipeline behavior.
+Используйте FluentValidation через централизованное поведение конвейера валидации MediatR.
 
-Do not introduce a generic repository or Unit of Work abstraction without a specific, documented reason.
+Не вводите обобщённый репозиторий или абстракцию Unit of Work без конкретной задокументированной причины.
 
-## 6. Technology Constraints
+## 6. Технологические ограничения
 
-Use the approved stack:
+Используйте утверждённый стек:
 
 - .NET 10.
 - ASP.NET Core Controllers.
@@ -122,140 +122,140 @@ Use the approved stack:
 - FluentValidation.
 - xUnit.
 - NSubstitute.
-- Microsoft.AspNetCore.Mvc.Testing for API integration tests.
+- Microsoft.AspNetCore.Mvc.Testing для интеграционных тестов API.
 - Vue 3.
 - TypeScript.
 - Vite.
 - Pinia.
 
-Do not replace these technologies or introduce major alternatives without approval.
+Не заменяйте эти технологии и не вводите крупные альтернативы без одобрения.
 
-Use `decimal` for monetary values and preserve the specified SQL precision.
+Используйте `decimal` для денежных значений и сохраняйте заданную точность SQL.
 
-Keep configuration and connection strings outside source code. Never commit secrets. Runtime development configuration lives in appsettings.Development.json in the API project, which is .gitignored; appsettings.Development.example.json is the committed placeholder. Design-time migrations use the MINIECOMMERCE_DB environment variable. Integration tests use the MINIECOMMERCE_TEST_DB environment variable.
+Держите конфигурацию и строки подключения вне исходного кода. Никогда не коммитьте секреты. Конфигурация для разработки во время выполнения находится в appsettings.Development.json в проекте API, который не коммитится и находится в .gitignore; appsettings.Development.example.json — коммитируемая заглушка. Миграции во время проектирования используют переменную окружения MINIECOMMERCE_DB. Интеграционные тесты используют переменную окружения MINIECOMMERCE_TEST_DB.
 
-## 7. Business-Critical Correctness
+## 7. Критичная для бизнеса корректность
 
-Treat the following areas as correctness requirements, not optional optimizations:
+Рассматривайте следующие области как требования корректности, а не как необязательные оптимизации:
 
-- User data isolation.
-- Cart ownership.
-- Cart concurrency and stale updates.
-- Atomic stock deduction.
-- Transactional checkout.
-- Preservation of the cart when checkout fails.
-- Order item price and name snapshots.
-- Transactional order cancellation and stock restoration.
-- Checkout idempotency.
-- Consistent handling of concurrent requests.
+- Изоляция данных пользователей.
+- Принадлежность корзины.
+- Конкурентность корзины и устаревшие обновления.
+- Атомарное списание запаса.
+- Транзакционное оформление заказа.
+- Сохранение корзины при неудачном оформлении заказа.
+- Снимки цены и названия позиций заказа.
+- Транзакционная отмена заказа и восстановление запаса.
+- Идемпотентность оформления заказа.
+- Согласованная обработка конкурентных запросов.
 
-Follow the approved domain rules and ADRs when implementing these behaviors.
+Следуйте утверждённым правилам домена и ADR при реализации этого поведения.
 
-Do not replace database-level concurrency controls with application-only checks where the specification requires atomic SQL operations or transaction locking.
+Не заменяйте средства управления конкурентностью на уровне базы данных проверками только на уровне приложения там, где спецификация требует атомарных SQL-операций или блокировок транзакций.
 
-Do not claim that a transaction definitely failed or that an order was not created when the commit outcome is unknown. Follow the approved idempotency and recovery rules.
+Не утверждайте, что транзакция точно завершилась неудачно или что заказ не был создан, когда результат фиксации неизвестен. Следуйте утверждённым правилам идемпотентности и восстановления.
 
-If the approved documentation does not define a necessary recovery or concurrency behavior, document the unresolved question and request approval before choosing a solution.
+Если утверждённая документация не определяет необходимое поведение восстановления или конкурентности, задокументируйте нерешённый вопрос и запросите одобрение перед выбором решения.
 
-## 8. Authentication and Environment Safety
+## 8. Аутентификация и безопасность окружения
 
-The initial development authentication mechanism uses the `X-Test-User` header with the approved test identities.
+Исходный механизм аутентификации для разработки использует заголовок `X-Test-User` с утверждёнными тестовыми идентичностями.
 
-This mechanism must be registered only in the Development environment and must not be available in Production.
+Этот механизм должен регистрироваться только в окружении Development и не должен быть доступен в Production.
 
-Unknown test-user values must not authenticate a request.
+Неизвестные значения тестового пользователя не должны аутентифицировать запрос.
 
-Never trust a client-supplied user ID to determine cart or order ownership.
+Никогда не доверяйте идентификатору пользователя, предоставленному клиентом, при определении принадлежности корзины или заказа.
 
-Seed data must be safe to apply repeatedly and must not create duplicate users.
+Начальные данные должны безопасно применяться повторно и не создавать дублирующихся пользователей.
 
-Integration tests must use a dedicated test database and must not accidentally modify a development or production database.
+Интеграционные тесты должны использовать выделенную тестовую базу данных и не должны случайно изменять базу данных разработки или production.
 
-## 9. API and Error Handling
+## 9. API и обработка ошибок
 
-Use ASP.NET Core `ProblemDetails` for API errors.
+Используйте ASP.NET Core `ProblemDetails` для ошибок API.
 
-Use FluentValidation for request and command validation where appropriate.
+Используйте FluentValidation для валидации запросов и команд там, где это уместно.
 
-Follow the documented HTTP status codes and error contracts.
+Следуйте задокументированным кодам состояния HTTP и контрактам ошибок.
 
-Do not introduce a custom API error format unless explicitly approved.
+Не вводите собственный формат ошибок API без явного одобрения.
 
-Do not expose stack traces, secrets, connection strings, or sensitive implementation details in API responses.
+Не раскрывайте трассировки стека, секреты, строки подключения или конфиденциальные детали реализации в ответах API.
 
-## 10. Testing Requirements
+## 10. Требования к тестированию
 
-Write tests for implemented functionality.
+Пишите тесты для реализованной функциональности.
 
-Use:
+Используйте:
 
-- xUnit for unit and integration tests.
-- NSubstitute for appropriate test doubles.
-- Microsoft.AspNetCore.Mvc.Testing for tests that exercise the API host.
-- A real SQL Server test database for integration tests that depend on SQL Server behavior.
+- xUnit для модульных и интеграционных тестов.
+- NSubstitute для подходящих тестовых двойников.
+- Microsoft.AspNetCore.Mvc.Testing для тестов, запускающих хост API.
+- Реальную тестовую базу данных SQL Server для интеграционных тестов, зависящих от поведения SQL Server.
 
-Prioritize tests for business invariants, transaction boundaries, concurrency, authorization boundaries, and idempotency.
+Отдавайте приоритет тестам для бизнес-инвариантов, границ транзакций, конкурентности, границ авторизации и идемпотентности.
 
-Do not treat in-memory database tests as a replacement for SQL Server integration tests when behavior depends on SQL Server locking, transactions, constraints, or `rowversion`.
+Не рассматривайте тесты на базе данных в памяти как замену интеграционным тестам SQL Server, когда поведение зависит от блокировок, транзакций, ограничений или `rowversion` SQL Server.
 
-Never run destructive test setup against a non-test database.
+Никогда не выполняйте деструктивную настройку тестов против базы данных, не являющейся тестовой.
 
-## 11. Implementation Workflow
+## 11. Процесс реализации
 
-Follow `docs/en/ROADMAP.md` in order.
+Следуйте `docs/en/ROADMAP.md` по порядку.
 
-For each stage:
+Для каждого этапа:
 
-1. Read the relevant requirements and decisions.
-2. Confirm the stage's scope and acceptance criteria.
-3. Implement only the agreed scope.
-4. Add or update tests.
-5. Run the relevant tests and build.
-6. Fix regressions introduced by the changes.
-7. Update documentation when an approved change affects it.
-8. Report what changed, which checks passed, and what remains incomplete.
+1. Прочитайте соответствующие требования и решения.
+2. Подтвердите объём этапа и критерии приёмки.
+3. Реализуйте только согласованный объём.
+4. Добавьте или обновите тесты.
+5. Запустите соответствующие тесты и сборку.
+6. Исправьте регрессии, внесённые изменениями.
+7. Обновляйте документацию, когда утверждённое изменение её затрагивает.
+8. Сообщайте, что изменилось, какие проверки прошли и что осталось незавершённым.
 
-Do not silently skip failed tests or claim that commands succeeded when they were not executed successfully.
+Не пропускайте молча провалившиеся тесты и не утверждайте, что команды выполнились успешно, если они не были выполнены успешно.
 
-Do not implement future stages early merely because doing so seems convenient.
+Не реализуйте будущие этапы заранее только потому, что это кажется удобным.
 
-## 12. Documentation Changes
+## 12. Изменения документации
 
-Documentation is part of the deliverable.
+Документация является частью результата.
 
-When an approved requirement or architectural decision changes:
+Когда утверждённое требование или архитектурное решение меняется:
 
-- Update the document responsible for that information.
-- Update `docs/en/DECISIONS.md` when the decision register is affected.
-- Create or update an ADR when a significant architectural decision is introduced or changed.
-- Update acceptance criteria and the roadmap when necessary.
-- Keep links and references between documents consistent.
+- Обновите документ, отвечающий за соответствующую информацию.
+- Обновите `docs/en/DECISIONS.md`, когда затронут реестр решений.
+- Создайте или обновите ADR, когда вводится или изменяется значимое архитектурное решение.
+- Обновите критерии приёмки и план разработки при необходимости.
+- Поддерживайте согласованность ссылок и перекрёстных ссылок между документами.
 
-Do not change approved requirements or ADRs merely to match an implementation that deviates from them. Identify the deviation and request approval.
+Не изменяйте утверждённые требования или ADR только для того, чтобы подстроиться под реализацию, отклоняющуюся от них. Выявите отклонение и запросите одобрение.
 
-## 13. Communication and Uncertainty
+## 13. Коммуникация и неопределённость
 
-When a requirement is ambiguous, incomplete, or contradictory:
+Когда требование неоднозначно, неполно или противоречиво:
 
-1. Explain the ambiguity briefly.
-2. Identify the affected behavior or design.
-3. Offer a recommendation when useful.
-4. Ask for a decision before implementing a behavior that materially affects the system.
+1. Кратко объясните неоднозначность.
+2. Определите затронутое поведение или проект.
+3. Предложите рекомендацию, когда это полезно.
+4. Запросите решение перед реализацией поведения, существенно влияющего на систему.
 
-Do not invent business rules.
+Не выдумывайте бизнес-правила.
 
-Do not claim that a design is approved unless it has been explicitly agreed upon.
+Не утверждайте, что проект одобрен, если это не было явно согласовано.
 
-Keep implementation reports concise and specific.
+Делайте отчёты о реализации краткими и конкретными.
 
-## 14. Completion Criteria
+## 14. Критерии завершения
 
-A task is complete only when:
+Задача считается завершённой только когда:
 
-- The implementation matches the approved scope.
-- Relevant tests have been added or updated.
-- Available required checks have been run and their results reported.
-- No known regression introduced by the change remains unresolved.
-- Relevant documentation is consistent with the implementation.
+- Реализация соответствует утверждённому объёму.
+- Соответствующие тесты добавлены или обновлены.
+- Доступные обязательные проверки выполнены, и их результаты сообщены.
+- Ни одна известная регрессия, внесённая изменением, не осталась нерешённой.
+- Соответствующая документация согласована с реализацией.
 
-If any criterion cannot be met, state the limitation explicitly.
+Если какой-либо критерий не может быть выполнен, явно укажите ограничение.

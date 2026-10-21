@@ -7,7 +7,7 @@ This folder is the source of truth for all project documentation. The Russian co
 - `docs/en/` is the source of truth for all project documentation.
 - `docs/ru/` is a companion translation. When EN and RU disagree, EN wins.
 - The RU translation status is tracked inside each RU file via a header note (see `docs/ru/` stubs) or, for `DECISIONS.md` and ADRs, must be kept in sync strictly.
-- Root-level [`README.md`](../../README.md) and [`AGENTS.md`](../../AGENTS.md) are outside the bilingual policy: the root README stays Russian as the human-facing entry point; [`AGENTS.md`](../../AGENTS.md) language is being migrated to Russian in a separate step and currently remains English.
+- Root-level [`README.md`](../../README.md) and [`AGENTS.md`](../../AGENTS.md) are outside the bilingual policy: the root README stays Russian as the human-facing entry point; [`AGENTS.md`](../../AGENTS.md) is now in Russian as of this iteration.
 
 ## Non-translatable tokens
 
