@@ -118,6 +118,29 @@ describe('cartStore', () => {
     expect(getCartMock).toHaveBeenCalledTimes(1)
   })
 
+  it('412 keeps the conflict warning when the recovery refetch fails', async () => {
+    getCartMock.mockRejectedValue({
+      status: 0,
+      detail: 'Сеть недоступна',
+      raw: null,
+    } as ApiError)
+    updateItemMock.mockRejectedValue({
+      status: 412,
+      code: 'cart_version_conflict',
+      raw: null,
+    } as ApiError)
+    const store = useCartStore()
+    store.etag = '"V1"'
+
+    await store.updateItem('p1', 3)
+
+    expect(store.conflict).toBe(true)
+    expect(store.error).toBeNull()
+    expect(updateItemMock).toHaveBeenCalledTimes(1)
+    expect(getCartMock).toHaveBeenCalledTimes(1)
+    expect(store.etag).toBe('"V1"')
+  })
+
   it('insufficient_stock sets error and keeps the items unchanged', async () => {
     getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
     updateItemMock.mockRejectedValue({

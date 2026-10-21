@@ -58,6 +58,21 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // A failed recovery refetch must not replace the conflict warning with a
+  // generic load error; the mutation itself is never replayed.
+  async function recoverFromVersionConflict(): Promise<void> {
+    try {
+      await load()
+    } catch (caught) {
+      if (import.meta.env.DEV) {
+        console.warn('[cart] Failed to refresh the cart after a version conflict.', caught)
+      }
+    } finally {
+      error.value = null
+      conflict.value = true
+    }
+  }
+
   async function runMutation(
     operation: (currentEtag: string) => Promise<CartResponse>,
   ): Promise<void> {
@@ -84,8 +99,7 @@ export const useCartStore = defineStore('cart', () => {
         if (isVersionConflict(apiError)) {
           // A stale or missing precondition must never be replayed automatically.
           // Reload the authoritative cart, then flag the conflict for the user.
-          await load()
-          conflict.value = true
+          await recoverFromVersionConflict()
           return
         }
 
@@ -111,8 +125,7 @@ export const useCartStore = defineStore('cart', () => {
       // Failures from the post-refetch retry (or an unexpected load failure).
       const apiError = caught as ApiError
       if (isVersionConflict(apiError)) {
-        await load()
-        conflict.value = true
+        await recoverFromVersionConflict()
       } else {
         error.value = apiError
       }

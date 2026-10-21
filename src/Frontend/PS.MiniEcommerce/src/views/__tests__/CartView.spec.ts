@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { NButton, NInputNumber } from 'naive-ui'
@@ -42,6 +42,13 @@ const item: CartItem = {
 const cart: Cart = { items: [item], totalAmount: 19 }
 const emptyCart: Cart = { items: [], totalAmount: 0 }
 
+function cartWithQuantity(quantity: number): Cart {
+  return {
+    items: [{ ...item, quantity, lineTotal: item.unitPrice * quantity }],
+    totalAmount: item.unitPrice * quantity,
+  }
+}
+
 function mountView() {
   return mount(CartView, {
     global: { stubs: { RouterLink: RouterLinkStub } },
@@ -56,6 +63,10 @@ describe('CartView', () => {
     getCartMock.mockReset()
     updateItemMock.mockReset()
     pushMock.mockReset()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('renders the empty state with a link to the catalog', async () => {
@@ -112,7 +123,26 @@ describe('CartView', () => {
     useCartStore().conflict = true
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Корзина изменилась, показаны актуальные данные')
+    expect(wrapper.text()).toContain('Изменение не применено')
+  })
+
+  it('prefers the conflict warning over a cart error', async () => {
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const store = useCartStore()
+    store.error = {
+      status: 500,
+      detail: 'Не удалось загрузить корзину',
+      raw: null,
+    } as ApiError
+    store.conflict = true
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Изменение не применено')
+    expect(wrapper.text()).not.toContain('Не удалось загрузить корзину')
   })
 
   it('sets loading while the cart request is in flight', async () => {
@@ -188,6 +218,7 @@ describe('CartView', () => {
   })
 
   it('recalculates the line total and the total amount from the draft immediately', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
 
     const wrapper = mountView()
@@ -198,6 +229,127 @@ describe('CartView', () => {
 
     expect(wrapper.find('.cart-item__line-total').text()).toBe('$28.50')
     expect(wrapper.find('.cart__total').text()).toBe('Итого: $28.50')
+  })
+
+  it('syncs the draft to the refetched cart after a 412 conflict', async () => {
+    const serverCart: Cart = {
+      items: [{ ...item, quantity: 4, lineTotal: 38 }],
+      totalAmount: 38,
+    }
+    getCartMock
+      .mockResolvedValueOnce({ data: cart, etag: '"V1"' })
+      .mockResolvedValueOnce({ data: serverCart, etag: '"V2"' })
+    updateItemMock.mockRejectedValue({
+      status: 412,
+      code: 'cart_version_conflict',
+      raw: null,
+    } as ApiError)
+
+    const wrapper = mountView()
+    await flushPromises()
+    const input = wrapper.findComponent(NInputNumber)
+
+    input.vm.$emit('update:value', 7)
+    await wrapper.vm.$nextTick()
+    input.vm.$emit('blur')
+    await flushPromises()
+
+    expect(updateItemMock).toHaveBeenCalledWith('p1', 7, '"V1"')
+    expect(getCartMock).toHaveBeenCalledTimes(2)
+    expect(input.props('value')).toBe(4)
+    expect(wrapper.find('.cart-item__line-total').text()).toBe('$38.00')
+    expect(wrapper.text()).toContain('Изменение не применено')
+  })
+
+  it('resyncs a stale draft when the conflict flag is set', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const serverCart: Cart = {
+      items: [{ ...item, quantity: 4, lineTotal: 38 }],
+      totalAmount: 38,
+    }
+    getCartMock.mockResolvedValue({ data: serverCart, etag: '"V1"' })
+
+    const wrapper = mountView()
+    await flushPromises()
+    const input = wrapper.findComponent(NInputNumber)
+
+    input.vm.$emit('update:value', 7)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.cart-item__line-total').text()).toBe('$66.50')
+
+    useCartStore().conflict = true
+    await flushPromises()
+
+    expect(input.props('value')).toBe(4)
+    expect(wrapper.find('.cart-item__line-total').text()).toBe('$38.00')
+  })
+
+  it('debounces quantity changes and sends one PUT after 500ms', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+    updateItemMock.mockResolvedValue({ data: cartWithQuantity(4), etag: '"V2"' })
+
+    const wrapper = mountView()
+    await flushPromises()
+    const input = wrapper.findComponent(NInputNumber)
+
+    input.vm.$emit('update:value', 3)
+    await wrapper.vm.$nextTick()
+    await vi.advanceTimersByTimeAsync(200)
+
+    input.vm.$emit('update:value', 4)
+    await wrapper.vm.$nextTick()
+    await vi.advanceTimersByTimeAsync(499)
+
+    expect(updateItemMock).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(updateItemMock).toHaveBeenCalledTimes(1)
+    expect(updateItemMock).toHaveBeenCalledWith('p1', 4, '"V1"')
+  })
+
+  it('sends the quantity immediately on blur and cancels the debounce', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+    updateItemMock.mockResolvedValue({ data: cartWithQuantity(3), etag: '"V2"' })
+
+    const wrapper = mountView()
+    await flushPromises()
+    const input = wrapper.findComponent(NInputNumber)
+
+    input.vm.$emit('update:value', 3)
+    await wrapper.vm.$nextTick()
+
+    input.vm.$emit('blur')
+    await flushPromises()
+
+    expect(updateItemMock).toHaveBeenCalledTimes(1)
+    expect(updateItemMock).toHaveBeenCalledWith('p1', 3, '"V1"')
+
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(updateItemMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('flushes a pending quantity change on unmount', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    getCartMock.mockResolvedValue({ data: cart, etag: '"V1"' })
+    updateItemMock.mockResolvedValue({ data: cartWithQuantity(3), etag: '"V2"' })
+
+    const wrapper = mountView()
+    await flushPromises()
+    const input = wrapper.findComponent(NInputNumber)
+
+    input.vm.$emit('update:value', 3)
+    await wrapper.vm.$nextTick()
+    expect(updateItemMock).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+    await flushPromises()
+
+    expect(updateItemMock).toHaveBeenCalledTimes(1)
+    expect(updateItemMock).toHaveBeenCalledWith('p1', 3, '"V1"')
   })
 
   it('syncs the draft back to the server quantity when the update fails', async () => {

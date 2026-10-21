@@ -3,10 +3,10 @@
     <h2>Корзина</h2>
 
     <n-alert v-if="store.conflict" type="warning" class="cart__conflict">
-      Корзина изменилась, показаны актуальные данные
+      Изменение не применено: корзина изменилась. Показаны актуальные данные.
     </n-alert>
 
-    <div v-if="store.error" class="cart__state">
+    <div v-if="store.error && !store.conflict" class="cart__state">
       <n-alert type="error">{{ errorMessage }}</n-alert>
       <n-button type="primary" @click="refresh">Обновить</n-button>
     </div>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { NAlert, NButton, NCard, NEmpty, NInputNumber, NSpin, NTag } from 'naive-ui'
 import { useCartStore } from '@/stores/cart'
@@ -105,6 +105,8 @@ const checkoutErrorMessage = computed(
 // every keystroke. The server value remains authoritative: drafts are synced
 // from store.items whenever the cart or an error changes.
 const drafts = reactive<Record<string, number>>({})
+const commitTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const QUANTITY_COMMIT_DELAY_MS = 500
 
 function quantityOf(item: CartItem): number {
   return drafts[item.productId] ?? item.quantity
@@ -147,26 +149,100 @@ watch(
   },
 )
 
-function onQuantityInput(item: CartItem, value: number | null): void {
-  if (typeof value === 'number') {
-    drafts[item.productId] = value
-  }
+watch(
+  () => store.conflict,
+  (conflict) => {
+    if (conflict) {
+      syncDrafts(store.items)
+    }
+  },
+)
+
+function findItem(productId: string): CartItem | undefined {
+  return store.items.find((item) => item.productId === productId)
 }
 
-async function onQuantityCommit(item: CartItem): Promise<void> {
-  const next = drafts[item.productId]
+function cancelCommitTimer(productId: string): void {
+  const timer = commitTimers.get(productId)
+  if (timer === undefined) {
+    return
+  }
 
+  clearTimeout(timer)
+  commitTimers.delete(productId)
+}
+
+async function commitQuantity(productId: string): Promise<void> {
+  const next = drafts[productId]
   if (next === undefined) {
     return
   }
 
-  if (next === item.quantity) {
-    delete drafts[item.productId]
+  const item = findItem(productId)
+  if (item === undefined || next === item.quantity) {
+    delete drafts[productId]
     return
   }
 
-  await store.updateItem(item.productId, next)
+  try {
+    await store.updateItem(productId, next)
+
+    if (store.conflict) {
+      syncDrafts(store.items)
+    }
+  } catch (caught) {
+    if (import.meta.env.DEV) {
+      console.warn('[cart] Failed to commit a debounced quantity change.', caught)
+    }
+  }
 }
+
+function scheduleQuantityCommit(productId: string): void {
+  cancelCommitTimer(productId)
+
+  const next = drafts[productId]
+  if (next === undefined) {
+    return
+  }
+
+  const item = findItem(productId)
+  if (item === undefined || next === item.quantity) {
+    delete drafts[productId]
+    return
+  }
+
+  const timer = setTimeout(() => {
+    commitTimers.delete(productId)
+    void commitQuantity(productId)
+  }, QUANTITY_COMMIT_DELAY_MS)
+
+  commitTimers.set(productId, timer)
+}
+
+function onQuantityInput(item: CartItem, value: number | null): void {
+  if (typeof value === 'number') {
+    drafts[item.productId] = value
+    scheduleQuantityCommit(item.productId)
+  }
+}
+
+async function onQuantityCommit(item: CartItem): Promise<void> {
+  if (!commitTimers.has(item.productId)) {
+    return
+  }
+
+  cancelCommitTimer(item.productId)
+  await commitQuantity(item.productId)
+}
+
+onBeforeUnmount(() => {
+  const pendingProductIds = Array.from(commitTimers.keys())
+
+  for (const productId of pendingProductIds) {
+    cancelCommitTimer(productId)
+    void commitQuantity(productId)
+  }
+})
 
 async function onRemove(item: CartItem): Promise<void> {
   await store.removeItem(item.productId)
