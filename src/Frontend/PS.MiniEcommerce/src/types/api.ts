@@ -1,4 +1,4 @@
-// API contracts mirrored from docs/architecture/api.md and verified against the
+// API contracts mirrored from docs/en/architecture/api.md and verified against the
 // backend implementation (see DECISIONS.md section 13 for known deviations).
 // Only fields that exist in the contract are declared here.
 

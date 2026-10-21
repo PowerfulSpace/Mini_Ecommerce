@@ -227,7 +227,7 @@ Requirements:
 
 - The idempotency key is scoped to a user.
 - A unique constraint on `(UserId, IdempotencyKey)` prevents duplicate attempts for the same user and key and decides which concurrent reservation wins.
-- The request fingerprint represents the semantically relevant request content as defined in `ADR-002-checkout-idempotency.md`.
+- The request fingerprint represents the semantically relevant request content as defined in `../adr/ADR-002-checkout-idempotency.md`.
 - Reusing the same key with a different request fingerprint produces `409 Conflict` with code `idempotency_key_reused`.
 - Repeating the same key and fingerprint returns the saved result when one exists.
 - A successful attempt is linked to the created order.
@@ -249,7 +249,7 @@ Transitions:
 
 On-demand recovery claims an expired attempt with a conditional update that succeeds only when the record is still `InProgress` and `LeaseExpiresAtUtc` is in the past. Only the request that affects one row proceeds; all others follow the in-progress wait policy. The claim extends `LeaseExpiresAtUtc` for the duration of the recovery attempt.
 
-Records are not cleaned up automatically in the MVP, as defined in `DECISIONS.md`.
+Records are not cleaned up automatically in the MVP, as defined in `../DECISIONS.md`.
 
 ## 5. Relationships
 

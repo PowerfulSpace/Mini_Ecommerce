@@ -221,7 +221,7 @@ A Checkout Attempt represents one logical checkout request identified by an idem
 - An attempt left in `InProgress` must not be blindly executed again without checking durable state.
 - Recovery runs on demand during a retry, only after the attempt's lease has expired. No background recovery process is part of the MVP.
 
-The technical reservation, persistence, and recovery mechanisms are defined in `ADR-002-checkout-idempotency.md`.
+The technical reservation, persistence, and recovery mechanisms are defined in `adr/ADR-002-checkout-idempotency.md`.
 
 ## 11. Stock and Inventory Consistency
 

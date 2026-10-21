@@ -6,7 +6,7 @@
 
 **Текущий этап:** Backend (Phase 1–8), frontend (Phase 9–10) и сквозная верификация MVP (Phase 11) завершены.
 
-Backend реализован по Clean Architecture (`PS.MiniEcommerce.Domain`, `.Application`, `.Infrastructure`, `.API`): каталог, корзина, оформление заказа с идемпотентностью и восстановлением, история заказов и отмена. Frontend на Vue 3 + TypeScript реализует каталог, карточку товара, корзину с `ETag`/`If-Match`, checkout с переиспользованием ключа идемпотентности, историю, детали и отмену заказа. Модульные, компонентные и интеграционные тесты покрывают бизнес-инварианты, транзакции, конкурентный доступ и идемпотентность. Последовательность этапов — в `docs/ROADMAP.md`.
+Backend реализован по Clean Architecture (`PS.MiniEcommerce.Domain`, `.Application`, `.Infrastructure`, `.API`): каталог, корзина, оформление заказа с идемпотентностью и восстановлением, история заказов и отмена. Frontend на Vue 3 + TypeScript реализует каталог, карточку товара, корзину с `ETag`/`If-Match`, checkout с переиспользованием ключа идемпотентности, историю, детали и отмену заказа. Модульные, компонентные и интеграционные тесты покрывают бизнес-инварианты, транзакции, конкурентный доступ и идемпотентность. Последовательность этапов — в `docs/en/ROADMAP.md`.
 
 ## Project Goals
 
@@ -55,19 +55,36 @@ MiniEcommerce/
 ├── AGENTS.md
 ├── README.md
 ├── docs/
-│   ├── PROJECT.md
-│   ├── SPEC.md
-│   ├── DOMAIN.md
-│   ├── DECISIONS.md
-│   ├── FRONTEND.md
-│   ├── ROADMAP.md
-│   ├── architecture/
-│   │   ├── architecture.md
-│   │   ├── data-model.md
-│   │   └── api.md
-│   └── adr/
-│       ├── ADR-001-cart-concurrency.md
-│       └── ADR-002-checkout-idempotency.md
+│   ├── en/
+│   │   ├── README.md
+│   │   ├── PROJECT.md
+│   │   ├── SPEC.md
+│   │   ├── DOMAIN.md
+│   │   ├── DECISIONS.md
+│   │   ├── FRONTEND.md
+│   │   ├── ROADMAP.md
+│   │   ├── architecture/
+│   │   │   ├── architecture.md
+│   │   │   ├── data-model.md
+│   │   │   └── api.md
+│   │   └── adr/
+│   │       ├── ADR-001-cart-concurrency.md
+│   │       └── ADR-002-checkout-idempotency.md
+│   └── ru/
+│       ├── README.md
+│       ├── PROJECT.md
+│       ├── SPEC.md
+│       ├── DOMAIN.md
+│       ├── DECISIONS.md
+│       ├── FRONTEND.md
+│       ├── ROADMAP.md
+│       ├── architecture/
+│       │   ├── architecture.md
+│       │   ├── data-model.md
+│       │   └── api.md
+│       └── adr/
+│           ├── ADR-001-cart-concurrency.md
+│           └── ADR-002-checkout-idempotency.md
 ├── src/
 │   ├── Backend/
 │   │   └── PS.MiniEcommerce/
@@ -86,21 +103,23 @@ MiniEcommerce/
 
 ## Documentation
 
-Проектная документация хранится в каталоге `docs/`.
+Проектная документация хранится в каталогах `docs/en/` (источник истины) и `docs/ru/` (перевод-компаньон).
 
-| Document | Purpose |
-|---|---|
-| `PROJECT.md` | Цели, границы и общая концепция проекта |
-| `SPEC.md` | Функциональные требования и критерии приёмки |
-| `DOMAIN.md` | Предметная область, бизнес-понятия и инварианты |
-| `DECISIONS.md` | Реестр принятых технических и архитектурных решений |
-| `FRONTEND.md` | Требования и принципы организации frontend |
-| `ROADMAP.md` | Этапы и последовательность реализации |
-| `architecture/architecture.md` | Архитектура backend и ответственность слоёв |
-| `architecture/data-model.md` | Модель данных и ограничения базы |
-| `architecture/api.md` | HTTP API и контракты взаимодействия |
-| `adr/ADR-001-cart-concurrency.md` | Решения по конкурентному доступу к корзине |
-| `adr/ADR-002-checkout-idempotency.md` | Решения по идемпотентности checkout |
+| Document (EN) | Purpose | RU companion |
+|---|---|---|
+| `docs/en/PROJECT.md` | Цели, границы и общая концепция проекта | `docs/ru/PROJECT.md` (заглушка) |
+| `docs/en/SPEC.md` | Функциональные требования и критерии приёмки | `docs/ru/SPEC.md` (заглушка) |
+| `docs/en/DOMAIN.md` | Предметная область, бизнес-понятия и инварианты | `docs/ru/DOMAIN.md` (заглушка) |
+| `docs/en/DECISIONS.md` | Реестр принятых технических и архитектурных решений | `docs/ru/DECISIONS.md` (заглушка) |
+| `docs/en/FRONTEND.md` | Требования и принципы организации frontend | `docs/ru/FRONTEND.md` (заглушка) |
+| `docs/en/ROADMAP.md` | Этапы и последовательность реализации | `docs/ru/ROADMAP.md` (заглушка) |
+| `docs/en/architecture/architecture.md` | Архитектура backend и ответственность слоёв | `docs/ru/architecture/architecture.md` (заглушка) |
+| `docs/en/architecture/data-model.md` | Модель данных и ограничения базы | `docs/ru/architecture/data-model.md` (заглушка) |
+| `docs/en/architecture/api.md` | HTTP API и контракты взаимодействия | `docs/ru/architecture/api.md` (заглушка) |
+| `docs/en/adr/ADR-001-cart-concurrency.md` | Решения по конкурентному доступу к корзине | `docs/ru/adr/ADR-001-cart-concurrency.md` (заглушка) |
+| `docs/en/adr/ADR-002-checkout-idempotency.md` | Решения по идемпотентности checkout | `docs/ru/adr/ADR-002-checkout-idempotency.md` (заглушка) |
+
+`docs/en/` — источник истины для всей проектной документации; `docs/ru/` — перевод-компаньон. При расхождении английской и русской версий верна английская. Русские файлы сейчас являются заглушками; статус перевода указан внутри каждого файла. Корневые `README.md` и `AGENTS.md` находятся вне политики двуязычности.
 
 `AGENTS.md` содержит инструкции для AI-агентов, работающих с репозиторием.
 
@@ -128,7 +147,7 @@ MiniEcommerce/
 
 ## Getting Started
 
-Порядок работ определяет `docs/ROADMAP.md`. Ниже — как собрать, запустить и протестировать проект локально.
+Порядок работ определяет `docs/en/ROADMAP.md`. Ниже — как собрать, запустить и протестировать проект локально.
 
 ### Prerequisites
 
@@ -189,11 +208,11 @@ npm run lint       # oxlint + eslint
 
 ### Development Authentication
 
-В окружении Development аутентификация выполняется заголовком `X-Test-User` со значениями `alice` или `bob`. Механизм зарегистрирован только в Development и недоступен в Production; неизвестные значения не аутентифицируют запрос. Во frontend identity выбирается в селекторе "dev identity" в шапке (`Header.vue`), который присутствует только в dev-сборке (`import.meta.env.DEV`). Подробности — в `docs/architecture/api.md` §2.1 и `docs/FRONTEND.md` §4.
+В окружении Development аутентификация выполняется заголовком `X-Test-User` со значениями `alice` или `bob`. Механизм зарегистрирован только в Development и недоступен в Production; неизвестные значения не аутентифицируют запрос. Во frontend identity выбирается в селекторе "dev identity" в шапке (`Header.vue`), который присутствует только в dev-сборке (`import.meta.env.DEV`). Подробности — в `docs/en/architecture/api.md` §2.1 и `docs/en/FRONTEND.md` §4.
 
 ### Known Issues / Deferred
 
-Осознанно принятые и отложенные за пределами MVP отклонения от контракта перечислены в `docs/DECISIONS.md` §13.
+Осознанно принятые и отложенные за пределами MVP отклонения от контракта перечислены в `docs/en/DECISIONS.md` §13.
 
 ## License
 

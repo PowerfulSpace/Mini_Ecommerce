@@ -282,7 +282,7 @@ Examples of business-rule checks:
 
 Checks that depend on mutable database state must be performed safely within the relevant transaction and concurrency strategy. A FluentValidation rule alone cannot guarantee stock consistency.
 
-The final mapping from validation and business failures to HTTP status codes must follow `architecture/api.md`.
+The final mapping from validation and business failures to HTTP status codes must follow `api.md`.
 
 ## 8. Current User and Ownership
 
@@ -308,7 +308,7 @@ EF Core is the default persistence technology. SQL Server-specific operations ma
 
 ### 9.1 Cart concurrency
 
-Cart mutations and checkout must follow the approved locking strategy described in `adr/ADR-001-cart-concurrency.md`.
+Cart mutations and checkout must follow the approved locking strategy described in `../adr/ADR-001-cart-concurrency.md`.
 
 The implementation must:
 
@@ -346,7 +346,7 @@ Do not add a generic Unit of Work abstraction or a generic repository merely to 
 
 Transactions run at the isolation level defined in `../DECISIONS.md`. Deadlocks are not retried in-process for the MVP; the request fails and the client retries with the same idempotency key or refetches the cart.
 
-The checkout idempotency reservation, bounded wait, and on-demand recovery strategy must follow `adr/ADR-002-checkout-idempotency.md`.
+The checkout idempotency reservation, bounded wait, and on-demand recovery strategy must follow `../adr/ADR-002-checkout-idempotency.md`.
 
 ## 10. Error Handling
 
@@ -441,4 +441,4 @@ The following rules are mandatory:
 - `api.md`
 - `../adr/ADR-001-cart-concurrency.md`
 - `../adr/ADR-002-checkout-idempotency.md`
-- `../../AGENTS.md`
+- `../../../AGENTS.md`

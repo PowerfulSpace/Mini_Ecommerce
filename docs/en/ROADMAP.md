@@ -392,7 +392,7 @@ Verify the complete MVP through realistic user workflows.
 - Verify cancellation and exact stock restoration.
 - Verify that the frontend reflects server-authoritative state.
 - Review error messages and logs.
-- Update `README.md` with final setup and execution instructions.
+- Update `../../README.md` with final setup and execution instructions.
 - Update documentation for any approved contract or behavior changes.
 
 ### Exit criteria
@@ -443,4 +443,4 @@ However:
 - `architecture/api.md`
 - `adr/ADR-001-cart-concurrency.md`
 - `adr/ADR-002-checkout-idempotency.md`
-- `AGENTS.md`
+- `../../AGENTS.md`

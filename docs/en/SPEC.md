@@ -222,7 +222,7 @@ The checkout request must fail without creating an order or modifying stock.
 
 Concurrent cart operations must not silently overwrite newer state.
 
-The implementation must use SQL Server concurrency controls as specified in `ADR-001-cart-concurrency.md`.
+The implementation must use SQL Server concurrency controls as specified in `adr/ADR-001-cart-concurrency.md`.
 
 The cart version is exposed as the `ETag` of every cart representation and is submitted by clients through the `If-Match` header on cart mutations and checkout.
 
@@ -567,9 +567,9 @@ The MVP is accepted when all applicable criteria below are satisfied.
 The decisions that previously blocked implementation are resolved:
 
 - DTO shapes, status codes, and stable error identifiers: `architecture/api.md`.
-- Cart version transport, `ETag`/`If-Match`, and the stale-version status: `ADR-001-cart-concurrency.md` and `architecture/api.md`.
-- Key format, fingerprint, bounded wait, `503`, lease, and on-demand recovery of `InProgress` records: `ADR-002-checkout-idempotency.md` and `DECISIONS.md`.
-- Transaction boundaries, lock ordering, isolation level, and deadlock handling: `ADR-001-cart-concurrency.md` and `architecture/architecture.md`.
+- Cart version transport, `ETag`/`If-Match`, and the stale-version status: `adr/ADR-001-cart-concurrency.md` and `architecture/api.md`.
+- Key format, fingerprint, bounded wait, `503`, lease, and on-demand recovery of `InProgress` records: `adr/ADR-002-checkout-idempotency.md` and `DECISIONS.md`.
+- Transaction boundaries, lock ordering, isolation level, and deadlock handling: `adr/ADR-001-cart-concurrency.md` and `architecture/architecture.md`.
 - Lazy cart creation and the cart uniqueness rule: `DOMAIN.md`, `architecture/data-model.md`, and `architecture/api.md`.
 
 The following details remain non-blocking and may be finalized during implementation without changing the contract:

@@ -15,16 +15,16 @@ Before implementing or modifying code, read the relevant project documentation.
 Start with:
 
 1. `README.md`
-2. `docs/PROJECT.md`
-3. `docs/SPEC.md`
-4. `docs/DOMAIN.md`
-5. `docs/DECISIONS.md`
-6. `docs/ROADMAP.md`
-7. `docs/architecture/architecture.md`
-8. `docs/architecture/data-model.md`
-9. `docs/architecture/api.md`
-10. `docs/FRONTEND.md`, when working on the frontend
-11. Relevant documents in `docs/adr/`
+2. `docs/en/PROJECT.md`
+3. `docs/en/SPEC.md`
+4. `docs/en/DOMAIN.md`
+5. `docs/en/DECISIONS.md`
+6. `docs/en/ROADMAP.md`
+7. `docs/en/architecture/architecture.md`
+8. `docs/en/architecture/data-model.md`
+9. `docs/en/architecture/api.md`
+10. `docs/en/FRONTEND.md`, when working on the frontend
+11. Relevant documents in `docs/en/adr/`
 
 Some files may not exist during the initial documentation phase. Do not assume missing documents are approved specifications. Create or modify them only as part of the agreed documentation workflow.
 
@@ -32,22 +32,30 @@ Some files may not exist during the initial documentation phase. Do not assume m
 
 Use the documents according to their responsibilities:
 
-- `docs/PROJECT.md` defines the project's purpose, scope, and goals.
-- `docs/SPEC.md` defines functional requirements and acceptance criteria.
-- `docs/DOMAIN.md` defines domain concepts, business rules, and invariants.
-- `docs/DECISIONS.md` indexes approved technical and architectural decisions.
-- `docs/architecture/architecture.md` defines application architecture and layer boundaries.
-- `docs/architecture/data-model.md` defines the database model and persistence constraints.
-- `docs/architecture/api.md` defines HTTP endpoints and API contracts.
-- `docs/FRONTEND.md` defines frontend requirements and implementation conventions.
-- `docs/ROADMAP.md` defines the implementation sequence and stage boundaries.
-- `docs/adr/` contains detailed Architecture Decision Records.
+- `docs/en/PROJECT.md` defines the project's purpose, scope, and goals.
+- `docs/en/SPEC.md` defines functional requirements and acceptance criteria.
+- `docs/en/DOMAIN.md` defines domain concepts, business rules, and invariants.
+- `docs/en/DECISIONS.md` indexes approved technical and architectural decisions.
+- `docs/en/architecture/architecture.md` defines application architecture and layer boundaries.
+- `docs/en/architecture/data-model.md` defines the database model and persistence constraints.
+- `docs/en/architecture/api.md` defines HTTP endpoints and API contracts.
+- `docs/en/FRONTEND.md` defines frontend requirements and implementation conventions.
+- `docs/en/ROADMAP.md` defines the implementation sequence and stage boundaries.
+- `docs/en/adr/` contains detailed Architecture Decision Records.
 - `README.md` provides an overview and navigation.
 - `AGENTS.md` defines working rules for AI agents.
 
 If documents conflict, do not silently choose one interpretation. Identify the conflict and ask for clarification before implementing the affected behavior.
 
 Do not duplicate detailed specifications unnecessarily across multiple files. Update the document responsible for the relevant information and add references where appropriate.
+
+## Bilingual documentation
+
+- `docs/en/` is the source of truth for all project documentation.
+- `docs/ru/` is a companion translation. When EN and RU disagree, EN wins.
+- The RU translation status is tracked inside each RU file via a header note (see `docs/ru/` stubs) or, for `DECISIONS.md` and ADRs, must be kept in sync strictly.
+- Root-level `README.md` and `AGENTS.md` are outside the bilingual policy: `README.md` stays Russian as the human-facing entry point; `AGENTS.md` language is being migrated to Russian in a separate step and currently remains English.
+- Do not translate: code identifiers, error codes, HTTP headers, SQL tokens, entity names, ADR statuses, config/env keys, .NET type names, frontend storage keys, API routes, ProblemDetails field names.
 
 ## 4. Scope Control
 
@@ -194,7 +202,7 @@ Never run destructive test setup against a non-test database.
 
 ## 11. Implementation Workflow
 
-Follow `docs/ROADMAP.md` in order.
+Follow `docs/en/ROADMAP.md` in order.
 
 For each stage:
 
@@ -218,7 +226,7 @@ Documentation is part of the deliverable.
 When an approved requirement or architectural decision changes:
 
 - Update the document responsible for that information.
-- Update `docs/DECISIONS.md` when the decision register is affected.
+- Update `docs/en/DECISIONS.md` when the decision register is affected.
 - Create or update an ADR when a significant architectural decision is introduced or changed.
 - Update acceptance criteria and the roadmap when necessary.
 - Keep links and references between documents consistent.
